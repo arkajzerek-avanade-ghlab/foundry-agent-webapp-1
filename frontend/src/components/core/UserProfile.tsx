@@ -12,17 +12,9 @@ import { useAuth } from '../../hooks/useAuth';
 
 const useStyles = makeStyles({
   container: {
-    position: 'absolute',
-    top: tokens.spacingVerticalM,
-    right: tokens.spacingHorizontalL,
-    zIndex: 10,
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
-    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-    borderRadius: tokens.borderRadiusMedium,
-    backgroundColor: tokens.colorNeutralBackground1,
-    boxShadow: tokens.shadow4,
   },
 });
 

@@ -175,6 +175,10 @@ app.MapPost("/api/chat/stream", async (
 {
     try
     {
+        // Route to specific agent if requested
+        if (!string.IsNullOrEmpty(request.AgentId))
+            agentService.OverrideAgentId(request.AgentId);
+
         httpContext.Response.Headers.Append("Content-Type", "text/event-stream");
         httpContext.Response.Headers.Append("Cache-Control", "no-cache");
         httpContext.Response.Headers.Append("Connection", "keep-alive");
@@ -345,15 +349,66 @@ static async Task WriteErrorEvent(HttpResponse response, string message, Cancell
     await response.Body.FlushAsync(ct);
 }
 
-// Get agent metadata (name, description, model, metadata)
-// Used by frontend to display agent information in the UI
-app.MapGet("/api/agent", async (
+// List all configured agents with metadata
+// Used by frontend to populate agent selector dropdown
+app.MapGet("/api/agents", async (
     AgentFrameworkService agentService,
     IHostEnvironment environment,
     CancellationToken cancellationToken) =>
 {
     try
     {
+        var (agentIds, defaultAgentId) = agentService.GetConfiguredAgents();
+        var agents = new List<AgentMetadataResponse>();
+
+        foreach (var agentId in agentIds)
+        {
+            try
+            {
+                agentService.OverrideAgentId(agentId);
+                var metadata = await agentService.GetAgentMetadataAsync(cancellationToken);
+                agents.Add(metadata);
+            }
+            catch (Exception ex)
+            {
+                var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning(ex, "Failed to load metadata for agent {AgentId}, skipping", agentId);
+            }
+        }
+
+        return Results.Ok(new AgentListResponse
+        {
+            Agents = agents,
+            DefaultAgentId = defaultAgentId
+        });
+    }
+    catch (Exception ex)
+    {
+        var errorResponse = ErrorResponseFactory.CreateFromException(ex, 500, environment.IsDevelopment());
+        return Results.Problem(
+            title: errorResponse.Title,
+            detail: errorResponse.Detail,
+            statusCode: errorResponse.Status,
+            extensions: errorResponse.Extensions
+        );
+    }
+})
+.RequireAuthorization(ScopePolicyName)
+.WithName("ListAgents");
+
+// Get agent metadata (name, description, model, metadata)
+// Used by frontend to display agent information in the UI
+app.MapGet("/api/agent", async (
+    string? agentId,
+    AgentFrameworkService agentService,
+    IHostEnvironment environment,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        if (!string.IsNullOrEmpty(agentId))
+            agentService.OverrideAgentId(agentId);
+
         var metadata = await agentService.GetAgentMetadataAsync(cancellationToken);
         return Results.Ok(metadata);
     }
@@ -413,6 +468,7 @@ app.MapGet("/api/conversations", async (
     AgentFrameworkService agentService,
     IHostEnvironment environment,
     int? limit,
+    string? agentId,
     CancellationToken cancellationToken) =>
 {
     // MI mode: conversations are agent-scoped, not user-scoped.
@@ -420,6 +476,8 @@ app.MapGet("/api/conversations", async (
     // This is by-design — OBO mode (ENTRA_BACKEND_CLIENT_ID set) scopes per-user.
     try
     {
+        if (!string.IsNullOrEmpty(agentId))
+            agentService.OverrideAgentId(agentId);
         var pageSize = Math.Clamp(limit ?? 20, 1, 100);
         var conversations = await agentService.ListConversationsAsync(pageSize, cancellationToken);
         var hasMore = conversations.Count > pageSize;

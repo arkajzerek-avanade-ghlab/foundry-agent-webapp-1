@@ -46,6 +46,8 @@ export class ChatService {
   private currentStreamAbort?: AbortController;
   // Flag indicating an intentional user cancellation of the active stream.
   private streamCancelled = false;
+  /** Active agent ID — passed to all API calls that support agent routing. */
+  currentAgentId: string | null = null;
 
   constructor(
     apiUrl: string,
@@ -138,6 +140,7 @@ export class ChatService {
     return {
       message,
       conversationId,
+      agentId: this.currentAgentId || undefined,
       imageDataUris: imageDataUris.length > 0 ? imageDataUris : undefined,
       fileDataUris: fileDataUris.length > 0 ? fileDataUris : undefined,
     };
@@ -516,6 +519,7 @@ export class ChatService {
         message: approved ? 'Approved' : 'Rejected',
         conversationId,
         previousResponseId,
+        agentId: this.currentAgentId || undefined,
         mcpApproval: {
           approvalRequestId,
           approved,
@@ -609,7 +613,9 @@ export class ChatService {
    */
   async listConversations(limit: number = 20): Promise<{ conversations: ConversationSummary[]; hasMore: boolean }> {
     const token = await this.ensureAuthToken();
-    const response = await fetch(`${this.apiUrl}/conversations?limit=${limit}`, {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (this.currentAgentId) params.set('agentId', this.currentAgentId);
+    const response = await fetch(`${this.apiUrl}/conversations?${params}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

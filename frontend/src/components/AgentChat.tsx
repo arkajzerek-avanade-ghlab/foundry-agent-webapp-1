@@ -19,8 +19,8 @@ interface AgentChatProps {
   starterPrompts?: string[];
 }
 
-export const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentDescription, agentLogo, starterPrompts }) => {
-  const { chat, state } = useAppState();
+export const AgentChat: React.FC<AgentChatProps> = ({ agentId, agentName, agentDescription, agentLogo, starterPrompts }) => {
+  const { chat, agents, state } = useAppState();
   const { dispatch } = useAppContext();
   const { getAccessToken } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -31,6 +31,11 @@ export const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentDescriptio
   const chatService = useMemo(() => {
     return new ChatService(apiUrl, getAccessToken, dispatch);
   }, [apiUrl, getAccessToken, dispatch]);
+
+  // Keep chatService.currentAgentId in sync with the selected agent
+  useEffect(() => {
+    chatService.currentAgentId = agentId;
+  }, [chatService, agentId]);
 
   const handleSendMessage = async (text: string, files?: File[]) => {
     if (chat.status === 'streaming' || chat.status === 'sending') {
@@ -69,6 +74,13 @@ export const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentDescriptio
     chatService.cancelStream();
     chatService.clearChat();
   };
+
+  const handleSelectAgent = useCallback((newAgentId: string) => {
+    if (newAgentId !== agentId) {
+      chatService.cancelStream();
+      dispatch({ type: 'AGENTS_SELECT', agentId: newAgentId });
+    }
+  }, [agentId, chatService, dispatch]);
 
   const handleCancelStream = () => {
     chatService.cancelStream();
@@ -216,6 +228,9 @@ export const AgentChat: React.FC<AgentChatProps> = ({ agentName, agentDescriptio
           streamingMessageId={chat.streamingMessageId}
           recoveredInput={chat.recoveredInput}
           recoveredAttachments={chat.recoveredAttachments}
+          agents={agents.available}
+          currentAgentId={agents.currentAgentId}
+          onSelectAgent={handleSelectAgent}
           onSendMessage={handleSendMessage}
           onClearError={handleClearError}
           onRecoveredInputConsumed={handleRecoveredInputConsumed}

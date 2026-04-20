@@ -7,6 +7,7 @@ using Microsoft.Extensions.AI;
 using OpenAI.Responses;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using WebApp.Api.Models;
 
@@ -25,7 +26,7 @@ namespace WebApp.Api.Services;
 public class AgentFrameworkService : IDisposable
 {
     private readonly string _agentEndpoint;
-    private readonly string _agentId;
+    private readonly string _defaultAgentId;
     private readonly string? _agentVersion;
     private readonly ILogger<AgentFrameworkService> _logger;
     private readonly IHttpContextAccessor? _httpContextAccessor;
@@ -34,11 +35,15 @@ public class AgentFrameworkService : IDisposable
     private readonly string? _managedIdentityClientId;
     private readonly bool _useObo;
     private readonly TokenCredential _fallbackCredential;
+    private readonly List<string> _configuredAgentIds;
 
-    // Agent metadata cache (static - shared across requests)
-    private static ChatClientAgent? s_cachedAgent;
-    private static AgentMetadataResponse? s_cachedMetadata;
-    private static readonly SemaphoreSlim s_agentLock = new(1, 1);
+    // Per-request agent ID (set via OverrideAgentId, falls back to _defaultAgentId)
+    private string _effectiveAgentId;
+
+    // Agent caches keyed by agent ID (static - shared across requests)
+    private static readonly ConcurrentDictionary<string, ChatClientAgent> s_cachedAgents = new();
+    private static readonly ConcurrentDictionary<string, AgentMetadataResponse> s_cachedMetadata = new();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_agentLocks = new();
     // MI assertion cache (static - user-independent, safe to share across requests)
     private static ManagedIdentityClientAssertion? s_miAssertion;
 
@@ -62,17 +67,37 @@ public class AgentFrameworkService : IDisposable
         _agentEndpoint = configuration["AI_AGENT_ENDPOINT"]
             ?? throw new InvalidOperationException("AI_AGENT_ENDPOINT is not configured");
 
-        _agentId = configuration["AI_AGENT_ID"]
+        _defaultAgentId = configuration["AI_AGENT_ID"]
             ?? throw new InvalidOperationException("AI_AGENT_ID is not configured");
+
+        _effectiveAgentId = _defaultAgentId;
+
+        // Parse optional comma-separated list of additional agent IDs
+        var agentIdsConfig = configuration["AI_AGENT_IDS"];
+        if (!string.IsNullOrWhiteSpace(agentIdsConfig))
+        {
+            _configuredAgentIds = agentIdsConfig
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            // Ensure default is always in the list
+            if (!_configuredAgentIds.Contains(_defaultAgentId, StringComparer.OrdinalIgnoreCase))
+                _configuredAgentIds.Insert(0, _defaultAgentId);
+        }
+        else
+        {
+            _configuredAgentIds = [_defaultAgentId];
+        }
 
         _agentVersion = string.IsNullOrWhiteSpace(configuration["AI_AGENT_VERSION"])
             ? null
             : configuration["AI_AGENT_VERSION"];
 
         _logger.LogDebug(
-            "Initializing AgentFrameworkService: endpoint={Endpoint}, agentId={AgentId}, version={Version}", 
+            "Initializing AgentFrameworkService: endpoint={Endpoint}, defaultAgentId={AgentId}, configuredAgents={AgentCount}, version={Version}", 
             _agentEndpoint, 
-            _agentId,
+            _defaultAgentId,
+            _configuredAgentIds.Count,
             _agentVersion ?? "latest");
 
         _backendClientId = configuration["ENTRA_BACKEND_CLIENT_ID"];
@@ -195,6 +220,22 @@ public class AgentFrameworkService : IDisposable
     }
 
     /// <summary>
+    /// Override the agent ID for this request. Must be a configured agent ID.
+    /// </summary>
+    public void OverrideAgentId(string agentId)
+    {
+        if (!_configuredAgentIds.Contains(agentId, StringComparer.OrdinalIgnoreCase))
+            throw new ArgumentException($"Agent '{agentId}' is not in the configured agent list. Configured agents: {string.Join(", ", _configuredAgentIds)}");
+        _effectiveAgentId = agentId;
+    }
+
+    /// <summary>
+    /// Get the list of configured agent IDs and the default.
+    /// </summary>
+    public (List<string> AgentIds, string DefaultAgentId) GetConfiguredAgents()
+        => (_configuredAgentIds, _defaultAgentId);
+
+    /// <summary>
     /// Get agent via Microsoft Agent Framework extension methods.
     /// Uses AIProjectClient.GetAIAgentAsync() which wraps v2 Agents API.
     /// </summary>
@@ -202,32 +243,35 @@ public class AgentFrameworkService : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (s_cachedAgent != null)
-            return s_cachedAgent;
+        var agentId = _effectiveAgentId;
 
-        await s_agentLock.WaitAsync(cancellationToken);
+        if (s_cachedAgents.TryGetValue(agentId, out var cached))
+            return cached;
+
+        var agentLock = s_agentLocks.GetOrAdd(agentId, _ => new SemaphoreSlim(1, 1));
+        await agentLock.WaitAsync(cancellationToken);
         try
         {
-            if (s_cachedAgent != null)
-                return s_cachedAgent;
+            if (s_cachedAgents.TryGetValue(agentId, out cached))
+                return cached;
 
-            _logger.LogInformation("Loading agent via Agent Framework: {AgentId}", _agentId);
+            _logger.LogInformation("Loading agent via Agent Framework: {AgentId}", agentId);
 
             // Use the same credential path as all other operations (MI or OBO)
             var client = GetProjectClient();
 
             // Use Microsoft.Agents.AI.AzureAI extension method - handles v2 Agents API internally
-            s_cachedAgent = await client.GetAIAgentAsync(
-                name: _agentId,
+            var agent = await client.GetAIAgentAsync(
+                name: agentId,
                 cancellationToken: cancellationToken);
 
             // Get the AgentVersion from the cached agent for metadata
-            var agentVersion = s_cachedAgent.GetService<AgentVersion>();
+            var agentVersion = agent.GetService<AgentVersion>();
             var definition = agentVersion?.Definition as PromptAgentDefinition;
             
             _logger.LogInformation(
                 "Loaded agent: name={AgentName}, model={Model}, version={Version}", 
-                agentVersion?.Name ?? _agentId,
+                agentVersion?.Name ?? agentId,
                 definition?.Model ?? "unknown",
                 agentVersion?.Version ?? "latest");
 
@@ -239,16 +283,17 @@ public class AgentFrameworkService : IDisposable
                     string.Join(", ", definition.StructuredInputs.Keys));
             }
 
-            return s_cachedAgent;
+            s_cachedAgents[agentId] = agent;
+            return agent;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load agent: {AgentId}", _agentId);
+            _logger.LogError(ex, "Failed to load agent: {AgentId}", agentId);
             throw;
         }
         finally
         {
-            s_agentLock.Release();
+            agentLock.Release();
         }
     }
 
@@ -286,7 +331,7 @@ public class AgentFrameworkService : IDisposable
         // Always bind to conversation — the conversation maintains MCP approval state
         ProjectResponsesClient responsesClient
             = GetProjectClient().OpenAI.GetProjectResponsesClientForAgent(
-                new AgentReference(_agentId, _agentVersion), 
+                new AgentReference(_effectiveAgentId, _agentVersion), 
                 conversationId);
 
         // If continuing from MCP approval, add approval response items
@@ -789,7 +834,7 @@ public class AgentFrameworkService : IDisposable
             // Fetch limit+1 to detect if more conversations exist beyond the requested page
             var fetchLimit = limit + 1;
             await foreach (var conv in GetProjectClient().OpenAI.Conversations.GetProjectConversationsAsync(
-                new AgentReference(_agentId, _agentVersion), cancellationToken: cancellationToken))
+                new AgentReference(_effectiveAgentId, _agentVersion), cancellationToken: cancellationToken))
             {
                 conversations.Add(new ConversationSummary
                 {
@@ -969,11 +1014,13 @@ public class AgentFrameworkService : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        var agentId = _effectiveAgentId;
+
         // Ensure agent is loaded via Agent Framework
         var agent = await GetAgentAsync(cancellationToken);
 
-        if (s_cachedMetadata != null)
-            return s_cachedMetadata;
+        if (s_cachedMetadata.TryGetValue(agentId, out var cached))
+            return cached;
 
         // Get AgentVersion from the ChatClientAgent's services
         var agentVersion = agent.GetService<AgentVersion>();
@@ -992,9 +1039,9 @@ public class AgentFrameworkService : IDisposable
         // Parse starter prompts from metadata
         List<string>? starterPrompts = ParseStarterPrompts(metadata);
 
-        s_cachedMetadata = new AgentMetadataResponse
+        var result = new AgentMetadataResponse
         {
-            Id = _agentId,
+            Id = agentId,
             Object = "agent",
             CreatedAt = agentVersion.CreatedAt.ToUnixTimeSeconds(),
             Name = agentVersion.Name ?? "AI Assistant",
@@ -1005,7 +1052,8 @@ public class AgentFrameworkService : IDisposable
             StarterPrompts = starterPrompts
         };
 
-        return s_cachedMetadata;
+        s_cachedMetadata[agentId] = result;
+        return result;
     }
 
     /// <summary>
@@ -1050,7 +1098,7 @@ public class AgentFrameworkService : IDisposable
 
         var agent = await GetAgentAsync(cancellationToken);
         var agentVersion = agent.GetService<AgentVersion>();
-        return agentVersion?.Name ?? _agentId;
+        return agentVersion?.Name ?? _effectiveAgentId;
     }
 
     /// <summary>

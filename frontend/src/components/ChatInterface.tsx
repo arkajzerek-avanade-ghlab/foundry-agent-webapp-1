@@ -10,7 +10,8 @@ import { ErrorMessage } from "./core/ErrorMessage";
 import { KeyboardShortcuts } from "./core/KeyboardShortcuts";
 import { BuiltWithBadge } from "./core/BuiltWithBadge";
 import { UserProfile } from "./core/UserProfile";
-import type { IChatItem } from "../types/chat";
+import { AgentSelector } from "./core/AgentSelector";
+import type { IChatItem, IAgentMetadata } from "../types/chat";
 import type { AppState } from "../types/appState";
 import type { AppError } from "../types/errors";
 import styles from './ChatInterface.module.css';
@@ -39,6 +40,9 @@ interface ChatInterfaceProps {
   isEditing?: boolean;
   onFeedback?: (messageId: string, rating: 'positive' | 'negative') => void;
   onDownloadFile?: (fileId: string, fileName: string, containerId?: string) => void;
+  agents?: IAgentMetadata[];
+  currentAgentId?: string | null;
+  onSelectAgent?: (agentId: string) => void;
   hasMessages?: boolean;
   disabled: boolean;
   agentName?: string;
@@ -49,7 +53,7 @@ interface ChatInterfaceProps {
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = (props) => {
-  const { messages, status, error, streamingMessageId, recoveredInput, recoveredAttachments, pendingMessages, onSendMessage, onMcpApproval, onClearError, onRecoveredInputConsumed, onDequeueMessage, onOpenSettings, onNewChat, onCancelStream, onToggleSidebar, onExportConversation, onRegenerate, onEditMessage, onCancelEdit, isEditing, onFeedback, onDownloadFile, hasMessages, disabled, agentName, agentDescription, agentLogo, starterPrompts, conversationId } = props;
+  const { messages, status, error, streamingMessageId, recoveredInput, recoveredAttachments, pendingMessages, onSendMessage, onMcpApproval, onClearError, onRecoveredInputConsumed, onDequeueMessage, onOpenSettings, onNewChat, onCancelStream, onToggleSidebar, onExportConversation, onRegenerate, onEditMessage, onCancelEdit, isEditing, onFeedback, onDownloadFile, agents, currentAgentId, onSelectAgent, hasMessages, disabled, agentName, agentDescription, agentLogo, starterPrompts, conversationId } = props;
   const deferredMessages = useDeferredValue(messages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [liveRegionMessage, setLiveRegionMessage] = useState<string>('');
@@ -178,7 +182,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = (props) => {
     >
       <DropZone visible={isDragging} />
       <KeyboardShortcuts open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
-      <UserProfile />
+      <div className={styles.topBar}>
+        {agents && agents.length > 1 && onSelectAgent && (
+          <AgentSelector
+            agents={agents}
+            currentAgentId={currentAgentId ?? null}
+            onSelectAgent={onSelectAgent}
+            disabled={isStreaming || isBusy}
+          />
+        )}
+        <UserProfile />
+      </div>
       {/* Live region for announcing streaming status to screen readers */}
       <div 
         role="status" 
