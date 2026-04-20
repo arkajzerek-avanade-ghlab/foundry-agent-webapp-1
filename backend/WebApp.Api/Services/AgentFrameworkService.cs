@@ -1,8 +1,10 @@
 using Azure.AI.Projects;
-using Azure.AI.Projects.OpenAI;
+using Azure.AI.Projects.Agents;
+using Azure.AI.Extensions.OpenAI;
 using Azure.Core;
 using Azure.Identity;
 using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Foundry;
 using Microsoft.Extensions.AI;
 using OpenAI.Responses;
 using Microsoft.Identity.Client;
@@ -41,7 +43,7 @@ public class AgentFrameworkService : IDisposable
     private string _effectiveAgentId;
 
     // Agent caches keyed by agent ID (static - shared across requests)
-    private static readonly ConcurrentDictionary<string, ChatClientAgent> s_cachedAgents = new();
+    private static readonly ConcurrentDictionary<string, FoundryAgent> s_cachedAgents = new();
     private static readonly ConcurrentDictionary<string, AgentMetadataResponse> s_cachedMetadata = new();
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_agentLocks = new();
     // MI assertion cache (static - user-independent, safe to share across requests)
@@ -239,7 +241,7 @@ public class AgentFrameworkService : IDisposable
     /// Get agent via Microsoft Agent Framework extension methods.
     /// Uses AIProjectClient.GetAIAgentAsync() which wraps v2 Agents API.
     /// </summary>
-    private async Task<ChatClientAgent> GetAgentAsync(CancellationToken cancellationToken = default)
+    private async Task<FoundryAgent> GetAgentAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -260,14 +262,16 @@ public class AgentFrameworkService : IDisposable
             // Use the same credential path as all other operations (MI or OBO)
             var client = GetProjectClient();
 
-            // Use Microsoft.Agents.AI.AzureAI extension method - handles v2 Agents API internally
-            var agent = await client.GetAIAgentAsync(
-                name: agentId,
-                cancellationToken: cancellationToken);
+            // Fetch the agent record from AI Foundry — required so that ProjectsAgentVersion
+            // is populated in the FoundryAgent's services. AsAIAgent(AgentReference) is
+            // synchronous/lightweight and does NOT populate GetService<ProjectsAgentVersion>().
+            var recordResult = await client.AgentAdministrationClient.GetAgentAsync(
+                agentId, cancellationToken);
+            var agent = client.AsAIAgent(recordResult.Value);
 
             // Get the AgentVersion from the cached agent for metadata
-            var agentVersion = agent.GetService<AgentVersion>();
-            var definition = agentVersion?.Definition as PromptAgentDefinition;
+            var agentVersion = agent.GetService<ProjectsAgentVersion>();
+            var definition = agentVersion?.Definition as DeclarativeAgentDefinition;
             
             _logger.LogInformation(
                 "Loaded agent: name={AgentName}, model={Model}, version={Version}", 
@@ -330,7 +334,7 @@ public class AgentFrameworkService : IDisposable
 
         // Always bind to conversation — the conversation maintains MCP approval state
         ProjectResponsesClient responsesClient
-            = GetProjectClient().OpenAI.GetProjectResponsesClientForAgent(
+            = GetProjectClient().ProjectOpenAIClient.GetProjectResponsesClientForAgent(
                 new AgentReference(_effectiveAgentId, _agentVersion), 
                 conversationId);
 
@@ -589,8 +593,7 @@ public class AgentFrameworkService : IDisposable
                 }
 
                 contentParts.Add(ResponseContentPart.CreateInputImagePart(
-                    BinaryData.FromBytes(bytes),
-                    mediaType));
+                    new Uri($"data:{mediaType};base64,{Convert.ToBase64String(bytes)}")));
             }
         }
 
@@ -798,7 +801,7 @@ public class AgentFrameworkService : IDisposable
             }
 
             ProjectConversation conversation
-                = await GetProjectClient().OpenAI.Conversations.CreateProjectConversationAsync(
+                = await GetProjectClient().ProjectOpenAIClient.GetProjectConversationsClient().CreateProjectConversationAsync(
                     conversationOptions,
                     cancellationToken);
 
@@ -833,7 +836,7 @@ public class AgentFrameworkService : IDisposable
             var conversations = new List<ConversationSummary>();
             // Fetch limit+1 to detect if more conversations exist beyond the requested page
             var fetchLimit = limit + 1;
-            await foreach (var conv in GetProjectClient().OpenAI.Conversations.GetProjectConversationsAsync(
+            await foreach (var conv in GetProjectClient().ProjectOpenAIClient.GetProjectConversationsClient().GetProjectConversationsAsync(
                 new AgentReference(_effectiveAgentId, _agentVersion), cancellationToken: cancellationToken))
             {
                 conversations.Add(new ConversationSummary
@@ -873,7 +876,7 @@ public class AgentFrameworkService : IDisposable
             var messages = new List<ConversationMessageInfo>();
 
             // Filter to message items only
-            await foreach (var item in GetProjectClient().OpenAI.Conversations.GetProjectConversationItemsAsync(
+            await foreach (var item in GetProjectClient().ProjectOpenAIClient.GetProjectConversationsClient().GetProjectConversationItemsAsync(
                 conversationId, itemKind: AgentResponseItemKind.Message, cancellationToken: cancellationToken))
             {
                 var responseItem = item.AsResponseResultItem();
@@ -943,7 +946,7 @@ public class AgentFrameworkService : IDisposable
             }
 
             _logger.LogInformation("Downloading standard file: {FileId}", fileId);
-            var fileClient = GetProjectClient().OpenAI.GetOpenAIFileClient();
+            var fileClient = GetProjectClient().ProjectOpenAIClient.GetOpenAIFileClient();
             var fileContent = await fileClient.DownloadFileAsync(fileId, cancellationToken);
             var fileInfo = await fileClient.GetFileAsync(fileId, cancellationToken);
             var fileName = fileInfo.Value?.Filename ?? $"{fileId}.bin";
@@ -1023,11 +1026,11 @@ public class AgentFrameworkService : IDisposable
             return cached;
 
         // Get AgentVersion from the ChatClientAgent's services
-        var agentVersion = agent.GetService<AgentVersion>();
+        var agentVersion = agent.GetService<ProjectsAgentVersion>();
         if (agentVersion == null)
             throw new InvalidOperationException("Agent version not available from ChatClientAgent");
 
-        var definition = agentVersion.Definition as PromptAgentDefinition;
+        var definition = agentVersion.Definition as DeclarativeAgentDefinition;
         var metadata = agentVersion.Metadata?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         // Log metadata keys at debug level for troubleshooting
@@ -1097,7 +1100,7 @@ public class AgentFrameworkService : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         var agent = await GetAgentAsync(cancellationToken);
-        var agentVersion = agent.GetService<AgentVersion>();
+        var agentVersion = agent.GetService<ProjectsAgentVersion>();
         return agentVersion?.Name ?? _effectiveAgentId;
     }
 
