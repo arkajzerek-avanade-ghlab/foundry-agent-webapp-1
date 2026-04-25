@@ -16,59 +16,60 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 const devLogger = {
   enabled: import.meta.env.DEV,
   group(label: string) { if (this.enabled) console.group(label); },
-  log: function (...args: unknown[]) { if (this.enabled) console.log(...args); },
+  log(...args: unknown[]) { if (this.enabled) console.log(...args); },
   end() { if (this.enabled) console.groupEnd(); }
 };
 
+type StatePath = { key: string; get: (s: AppState) => unknown };
+
+const STATE_PATHS: StatePath[] = [
+  { key: 'auth.status', get: s => s.auth.status },
+  { key: 'chat.status', get: s => s.chat.status },
+  { key: 'chat.messages.length', get: s => s.chat.messages.length },
+  { key: 'chat.streamingMessageId', get: s => s.chat.streamingMessageId },
+  { key: 'ui.chatInputEnabled', get: s => s.ui.chatInputEnabled },
+  { key: 'conversations.sidebarOpen', get: s => s.conversations.sidebarOpen },
+  { key: 'conversations.list.length', get: s => s.conversations.list.length },
+];
+
 // Dev mode logging middleware (diff-based)
-const logStateChange = (action: AppAction, prevState: AppState, nextState: AppState) => {
+function logStateChange(action: AppAction, prevState: AppState, nextState: AppState): void {
   if (!devLogger.enabled) return;
   const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
   devLogger.group(`🔄 [${timestamp}] ${action.type}`);
   devLogger.log('Action:', action);
   const changes: Record<string, unknown> = {};
-  
-  // Track all meaningful state changes
-  if (prevState.auth.status !== nextState.auth.status) {
-    changes['auth.status'] = `${prevState.auth.status} → ${nextState.auth.status}`;
+
+  for (const { key, get } of STATE_PATHS) {
+    const prev = get(prevState);
+    const next = get(nextState);
+    if (prev !== next) {
+      changes[key] = `${prev} → ${next}`;
+    }
   }
-  if (prevState.chat.status !== nextState.chat.status) {
-    changes['chat.status'] = `${prevState.chat.status} → ${nextState.chat.status}`;
-  }
-  if (prevState.chat.messages.length !== nextState.chat.messages.length) {
-    changes['chat.messages.length'] = `${prevState.chat.messages.length} → ${nextState.chat.messages.length}`;
-  }
-  if (prevState.chat.streamingMessageId !== nextState.chat.streamingMessageId) {
-    changes['chat.streamingMessageId'] = `${prevState.chat.streamingMessageId} → ${nextState.chat.streamingMessageId}`;
-  }
-  if (prevState.ui.chatInputEnabled !== nextState.ui.chatInputEnabled) {
-    changes['ui.chatInputEnabled'] = `${prevState.ui.chatInputEnabled} → ${nextState.ui.chatInputEnabled}`;
-  }
-  if (prevState.conversations.sidebarOpen !== nextState.conversations.sidebarOpen) {
-    changes['conversations.sidebarOpen'] = `${prevState.conversations.sidebarOpen} → ${nextState.conversations.sidebarOpen}`;
-  }
-  if (prevState.conversations.list.length !== nextState.conversations.list.length) {
-    changes['conversations.list.length'] = `${prevState.conversations.list.length} → ${nextState.conversations.list.length}`;
-  }
-  
+
   if (Object.keys(changes).length) {
     devLogger.log('Changes:', changes);
   } else {
     devLogger.log('(No state changes)');
   }
   devLogger.end();
-};
+}
 
 /**
  * Enhanced reducer with logging middleware
  */
-const reducerWithLogging = (state: AppState, action: AppAction): AppState => {
+function reducerWithLogging(state: AppState, action: AppAction): AppState {
   const nextState = appReducer(state, action);
   logStateChange(action, state, nextState);
   return nextState;
-};
+}
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+interface AppProviderProps {
+  children: ReactNode;
+}
+
+export function AppProvider({ children }: AppProviderProps) {
   const [state, dispatch] = useReducer(reducerWithLogging, initialAppState);
   const { accounts } = useMsal();
 
@@ -95,17 +96,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       {children}
     </AppContext.Provider>
   );
-};
+}
 
 /**
  * Hook to access app state and dispatch
  * Throws error if used outside AppProvider
  */
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAppContext = () => {
+export function useAppContext(): AppContextValue {
   const context = useContext(AppContext);
   if (!context) {
     throw new Error('useAppContext must be used within AppProvider');
   }
   return context;
-};
+}

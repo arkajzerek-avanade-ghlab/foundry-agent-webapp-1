@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 
-export const useAppState = () => {
+export function useAppState() {
   const { state, dispatch } = useAppContext();
   
   // Memoize computed values to prevent unnecessary recalculations
@@ -46,22 +46,22 @@ export const useAppState = () => {
     }),
     [state, dispatch, isAuthenticated, isChatBusy, canSendMessage, isStreaming]
   );
-};
+}
 
-export const useChatState = () => {
+export function useChatState() {
   const { state, dispatch } = useAppContext();
   
   return useMemo(
     () => ({ chat: state.chat, dispatch }),
     [state.chat, dispatch]
   );
-};
+}
 
-export const useUIState = () => {
+export function useUIState() {
   const { state, dispatch } = useAppContext();
   
   return useMemo(
     () => ({ ui: state.ui, dispatch }),
     [state.ui, dispatch]
   );
-};
+}

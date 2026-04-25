@@ -1,6 +1,10 @@
 import type { AppError, ErrorCode } from '../types/errors';
 import { DETAILED_ERROR_MESSAGES, isRecoverableError } from '../types/errors';
 
+function getErrorMessageLower(error: unknown): string {
+  return error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+}
+
 /**
  * Get user-friendly error message with recovery hints.
  * Provides more detailed, actionable guidance than basic error messages.
@@ -52,18 +56,14 @@ export function createAppError(
  * Determine error code from HTTP response
  */
 export function getErrorCodeFromResponse(response: Response): ErrorCode {
-  // Match Azure sample pattern: check status codes explicitly
   if (response.status === 401 || response.status === 403) {
     return 'AUTH';
   }
-  if (response.status >= 500) {
-    return 'SERVER'; // Server-side error
-  }
   if (response.status >= 400) {
-    return 'SERVER'; // Client error (bad request, etc.)
+    return 'SERVER';
   }
   if (!response.ok) {
-    return 'NETWORK'; // Other HTTP errors
+    return 'NETWORK';
   }
   return 'UNKNOWN';
 }
@@ -108,7 +108,7 @@ export async function parseErrorFromResponse(response: Response): Promise<string
  * Determine error code from error message/type
  */
 export function getErrorCodeFromMessage(error: unknown): ErrorCode {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessageLower(error);
   
   if (message.includes('token') || message.includes('auth') || message.includes('unauthorized')) {
     return 'AUTH';
@@ -127,7 +127,7 @@ export function getErrorCodeFromMessage(error: unknown): ErrorCode {
  * Check if error is due to token expiry
  */
 export function isTokenExpiredError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessageLower(error);
   return message.includes('token') && (message.includes('expired') || message.includes('invalid'));
 }
 
@@ -138,7 +138,7 @@ export function isNetworkError(error: unknown): boolean {
   if (error instanceof TypeError && error.message === 'Failed to fetch') {
     return true;
   }
-  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const message = getErrorMessageLower(error);
   return message.includes('network') || message.includes('connection') || message.includes('fetch');
 }
 

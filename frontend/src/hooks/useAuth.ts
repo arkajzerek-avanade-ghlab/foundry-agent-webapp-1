@@ -2,6 +2,7 @@ import { useMsal } from "@azure/msal-react";
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import { tokenRequest } from "../config/authConfig";
 import { useCallback, useMemo } from "react";
+import type { AccountInfo } from "@azure/msal-browser";
 
 /**
  * Authentication hook for MSAL-based authentication.
@@ -29,7 +30,11 @@ import { useCallback, useMemo } from "react";
  * }
  * ```
  */
-export const useAuth = () => {
+export function useAuth(): {
+  getAccessToken: () => Promise<string | null>;
+  isAuthenticated: boolean;
+  user: AccountInfo | undefined;
+} {
   const { instance, accounts } = useMsal();
 
   const getAccessToken = useCallback(async (): Promise<string | null> => {
@@ -49,9 +54,7 @@ export const useAuth = () => {
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
         // Fallback to interactive login if silent fails
-        console.warn(
-          "Silent token acquisition failed, prompting for interaction"
-        );
+        console.warn("Silent token acquisition failed, prompting for interaction");
         try {
           const response = await instance.acquireTokenPopup(request);
           return response.accessToken;
@@ -65,23 +68,11 @@ export const useAuth = () => {
     }
   }, [instance, accounts]);
 
-  // Memoize computed values
-  const isAuthenticated = useMemo(
-    () => accounts.length > 0,
-    [accounts.length]
-  );
-
-  const user = useMemo(
-    () => accounts[0],
-    [accounts]
-  );
+  const isAuthenticated = useMemo(() => accounts.length > 0, [accounts]);
+  const user = accounts[0];
 
   return useMemo(
-    () => ({
-      getAccessToken,
-      isAuthenticated,
-      user,
-    }),
+    () => ({ getAccessToken, isAuthenticated, user }),
     [getAccessToken, isAuthenticated, user]
   );
-};
+}

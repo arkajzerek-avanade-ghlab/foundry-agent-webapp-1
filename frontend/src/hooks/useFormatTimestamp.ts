@@ -20,7 +20,7 @@ import { useCallback } from 'react';
  * - "1 hour ago"
  * - "Oct 30, 10:30 AM" (> 24 hours)
  */
-export const useFormatTimestamp = () => {
+export function useFormatTimestamp() {
   return useCallback((date: Date | undefined): string => {
     if (!date) {
       return '';
@@ -61,4 +61,4 @@ export const useFormatTimestamp = () => {
       hour12: true,
     }).format(date);
   }, []);
-};
+}
