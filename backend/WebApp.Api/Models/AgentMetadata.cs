@@ -21,3 +21,12 @@ public record AgentMetadataResponse
     /// </summary>
     public List<string>? StarterPrompts { get; init; }
 }
+
+/// <summary>
+/// Response for the /api/agents endpoint listing all configured agents.
+/// </summary>
+public record AgentListResponse
+{
+    public required List<AgentMetadataResponse> Agents { get; init; }
+    public required string DefaultAgentId { get; init; }
+}

@@ -29,6 +29,7 @@ export const useAppState = () => {
     () => ({
       // State selectors for easy access
       auth: state.auth,
+      agents: state.agents,
       chat: state.chat,
       ui: state.ui,
       

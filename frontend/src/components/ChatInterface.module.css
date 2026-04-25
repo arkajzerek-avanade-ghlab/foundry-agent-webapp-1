@@ -10,6 +10,18 @@
   position: relative;
 }
 
+/* Top bar - in-flow header row so dropdown popup opens below it, not over content */
+.topBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacingHorizontalS, 8px);
+  padding: var(--spacingVerticalS, 8px) var(--spacingHorizontalL, 16px);
+  border-bottom: 1px solid var(--colorNeutralStroke2);
+  background-color: var(--colorNeutralBackground1);
+}
+
 /* Messages container - scrolling area */
 .messagesContainer {
   flex: 1;

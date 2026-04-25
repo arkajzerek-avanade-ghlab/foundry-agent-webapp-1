@@ -36,6 +36,67 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         },
       };
 
+    // === Agent Actions ===
+    case 'AGENTS_LOADING':
+      return {
+        ...state,
+        agents: {
+          ...state.agents,
+          isLoading: true,
+        },
+      };
+
+    case 'AGENTS_SET_LIST': {
+      const currentAgentId = state.agents.currentAgentId
+        || localStorage.getItem('selectedAgentId')
+        || action.agents[0]?.id
+        || null;
+      // Ensure selected agent exists in list
+      const validAgentId = action.agents.some(a => a.id === currentAgentId)
+        ? currentAgentId
+        : action.agents[0]?.id || null;
+      return {
+        ...state,
+        agents: {
+          available: action.agents,
+          currentAgentId: validAgentId,
+          isLoading: false,
+        },
+      };
+    }
+
+    case 'AGENTS_SELECT': {
+      localStorage.setItem('selectedAgentId', action.agentId);
+      return {
+        ...state,
+        agents: {
+          ...state.agents,
+          currentAgentId: action.agentId,
+        },
+        // Clear chat and conversations when switching agents
+        chat: {
+          status: 'idle',
+          messages: [],
+          currentConversationId: null,
+          error: null,
+          streamingMessageId: undefined,
+          recoveredInput: undefined,
+          recoveredAttachments: undefined,
+          pendingMessages: [],
+        },
+        conversations: {
+          list: [],
+          isLoading: false,
+          sidebarOpen: false,
+          hasMore: false,
+        },
+        ui: {
+          ...state.ui,
+          chatInputEnabled: true,
+        },
+      };
+    }
+
     // === Chat Message Actions ===
     case 'CHAT_SEND_MESSAGE':
       return {

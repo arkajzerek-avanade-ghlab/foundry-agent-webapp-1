@@ -1,5 +1,5 @@
 import type { AccountInfo } from '@azure/msal-browser';
-import type { IChatItem, IUsageInfo, IAnnotation, IMcpApprovalRequest, IFileAttachment } from './chat';
+import type { IChatItem, IUsageInfo, IAnnotation, IMcpApprovalRequest, IFileAttachment, IAgentMetadata } from './chat';
 import type { AppError } from './errors';
 
 // Re-export types for convenience
@@ -26,6 +26,13 @@ export interface AppState {
     status: 'initializing' | 'authenticated' | 'unauthenticated' | 'error';
     user: AccountInfo | null;
     error: string | null;
+  };
+
+  // Multi-agent state
+  agents: {
+    available: IAgentMetadata[];
+    currentAgentId: string | null;
+    isLoading: boolean;
   };
   
   // Chat operations state
@@ -64,6 +71,11 @@ export type AppAction =
   // Auth actions
   | { type: 'AUTH_INITIALIZED'; user: AccountInfo }
   | { type: 'AUTH_TOKEN_EXPIRED' }
+
+  // Agent actions
+  | { type: 'AGENTS_SET_LIST'; agents: IAgentMetadata[] }
+  | { type: 'AGENTS_SELECT'; agentId: string }
+  | { type: 'AGENTS_LOADING' }
   
   // Chat actions
   | { type: 'CHAT_SEND_MESSAGE'; message: IChatItem }
@@ -107,6 +119,11 @@ export const initialAppState: AppState = {
     status: 'initializing',
     user: null,
     error: null,
+  },
+  agents: {
+    available: [],
+    currentAgentId: null,
+    isLoading: true,
   },
   chat: {
     status: 'idle',

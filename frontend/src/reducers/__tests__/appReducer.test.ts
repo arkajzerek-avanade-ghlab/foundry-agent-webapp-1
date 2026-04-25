@@ -27,6 +27,11 @@ function createInitialState(): AppState {
     ui: {
       chatInputEnabled: true,
     },
+    agents: {
+      available: [],
+      currentAgentId: null,
+      isLoading: false,
+    },
     conversations: {
       list: [],
       isLoading: false,
@@ -1461,6 +1466,10 @@ describe('appReducer', () => {
       const shape = getShape(initialAppState as unknown as Record<string, unknown>);
       expect(shape).toMatchInlineSnapshot(`
         [
+          "agents",
+          "agents.available",
+          "agents.currentAgentId",
+          "agents.isLoading",
           "auth",
           "auth.error",
           "auth.status",
