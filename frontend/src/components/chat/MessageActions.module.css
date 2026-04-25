@@ -45,6 +45,16 @@
   background-color: var(--colorBrandBackground2Hover);
 }
 
+.speakingActive {
+  color: var(--colorBrandForeground1);
+  background-color: var(--colorBrandBackground2);
+}
+
+.speakingActive:hover {
+  color: var(--colorBrandForeground1);
+  background-color: var(--colorBrandBackground2Hover);
+}
+
 .copiedTooltip {
   position: absolute;
   bottom: calc(100% + 4px);
