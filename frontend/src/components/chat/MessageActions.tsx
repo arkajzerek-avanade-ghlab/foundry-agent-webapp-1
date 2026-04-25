@@ -1,11 +1,14 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Tooltip } from '@fluentui/react-components';
 import {
   CopyRegular,
   ArrowClockwiseRegular,
   ThumbLikeRegular,
   ThumbDislikeRegular,
+  Speaker2Regular,
+  SpeakerOffRegular,
 } from '@fluentui/react-icons';
+import { stripMarkdown } from '../../utils/stripMarkdown';
 import styles from './MessageActions.module.css';
 
 interface MessageActionsProps {
@@ -17,6 +20,17 @@ interface MessageActionsProps {
 function MessageActionsComponent({ content, onRegenerate, onFeedback }: MessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Cancel any ongoing speech when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (utteranceRef.current) {
+        window.speechSynthesis?.cancel();
+      }
+    };
+  }, []);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -27,6 +41,31 @@ function MessageActionsComponent({ content, onRegenerate, onFeedback }: MessageA
       console.warn('Clipboard copy failed:', err);
     }
   }, [content]);
+
+  const handleSpeak = useCallback(() => {
+    if (!window.speechSynthesis) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      utteranceRef.current = null;
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(stripMarkdown(content));
+    utterance.onend = () => {
+      utteranceRef.current = null;
+      setIsSpeaking(false);
+    };
+    utterance.onerror = () => {
+      utteranceRef.current = null;
+      setIsSpeaking(false);
+    };
+
+    utteranceRef.current = utterance;
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }, [content, isSpeaking]);
 
   const handleFeedback = useCallback((rating: 'positive' | 'negative') => {
     const newRating = feedback === rating ? null : rating;
@@ -46,6 +85,18 @@ function MessageActionsComponent({ content, onRegenerate, onFeedback }: MessageA
         >
           {copied && <span className={styles.copiedTooltip} role="status" aria-live="polite">Copied!</span>}
           <CopyRegular fontSize={16} />
+        </button>
+      </Tooltip>
+
+      <Tooltip content={isSpeaking ? 'Stop reading' : 'Read aloud'} relationship="label" withArrow>
+        <button
+          className={`${styles.actionButton} ${isSpeaking ? styles.speakingActive : ''}`}
+          onClick={handleSpeak}
+          aria-label={isSpeaking ? 'Stop reading aloud' : 'Read aloud'}
+          aria-pressed={isSpeaking}
+          disabled={!window.speechSynthesis}
+        >
+          {isSpeaking ? <SpeakerOffRegular fontSize={16} /> : <Speaker2Regular fontSize={16} />}
         </button>
       </Tooltip>
 
