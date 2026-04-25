@@ -50,6 +50,12 @@ const logStateChange = (action: AppAction, prevState: AppState, nextState: AppSt
   if (prevState.conversations.list.length !== nextState.conversations.list.length) {
     changes['conversations.list.length'] = `${prevState.conversations.list.length} → ${nextState.conversations.list.length}`;
   }
+  if (prevState.agents.currentAgentId !== nextState.agents.currentAgentId) {
+    changes['agents.currentAgentId'] = `${prevState.agents.currentAgentId} → ${nextState.agents.currentAgentId}`;
+  }
+  if (prevState.agents.available.length !== nextState.agents.available.length) {
+    changes['agents.available.length'] = `${prevState.agents.available.length} → ${nextState.agents.available.length}`;
+  }
   
   if (Object.keys(changes).length) {
     devLogger.log('Changes:', changes);
