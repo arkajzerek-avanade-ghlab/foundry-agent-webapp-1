@@ -1,0 +1,61 @@
+{
+  "last_updated": "2026-05-05T11:25:00Z",
+  "run_id": "25373464958",
+  "tasks_run_this_session": ["task1", "task3", "task7"],
+  "commands": {
+    "frontend_test": "cd frontend && npm run test:run",
+    "frontend_coverage": "cd frontend && npm run test:coverage",
+    "frontend_lint": "cd frontend && npm run lint",
+    "frontend_build": "cd frontend && npm run build",
+    "backend_test": "dotnet test backend/WebApp.Api.Tests/",
+    "frontend_install": "cd frontend && npm install --legacy-peer-deps"
+  },
+  "test_frameworks": {
+    "frontend": "vitest with vi.fn() mocks",
+    "backend": "MSTest SDK 3.10.2"
+  },
+  "test_counts": {
+    "frontend_before": 174,
+    "frontend_after": 268,
+    "backend": 48
+  },
+  "open_prs": [
+    {
+      "title": "[Test Improver] Add tests for errorHandler, exportConversation, and stripMarkdown utils",
+      "branch": "test-assist/error-handler-export-utils",
+      "created": "2026-05-05"
+    }
+  ],
+  "monthly_activity_issue": {
+    "title": "[Test Improver] Monthly Activity 2026-05",
+    "month": "2026-05"
+  },
+  "backlog": [
+    {
+      "file": "frontend/src/services/chatService.ts",
+      "coverage": "~11% stmts",
+      "priority": "high",
+      "note": "Complex SSE streaming; significant mocking effort needed"
+    },
+    {
+      "file": "frontend/src/reducers/appReducer.ts",
+      "coverage": "88% stmts",
+      "priority": "medium",
+      "note": "Edit/undo flow branches uncovered"
+    },
+    {
+      "file": "frontend/src/config/authConfig.ts",
+      "coverage": "38% stmts",
+      "priority": "low",
+      "note": "MSAL config branches; needs env stubbing"
+    }
+  ],
+  "notes": [
+    "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
+    "stripMarkdown: link regex [^\]]+ requires >=1 char, empty-text links not replaced",
+    "Frontend tests need VITE_ENTRA_SPA_CLIENT_ID and VITE_ENTRA_TENANT_ID but tests still run (only warn)",
+    "Coverage report writes fail in CI (ENOENT step_summary) but exit code 0 - harmless",
+    "Backend uses MSTest.Sdk not traditional xUnit; no [Fact] - uses [TestMethod]",
+    "git commit requires COMMIT_MESSAGE.md workflow per repo policy"
+  ]
+}
