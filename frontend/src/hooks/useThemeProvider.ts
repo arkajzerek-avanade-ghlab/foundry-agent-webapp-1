@@ -68,7 +68,7 @@ export function useMediaQuery(query: string): boolean {
  * }
  * ```
  */
-export const useThemeProvider = (): ThemeContextValue => {
+export function useThemeProvider(): ThemeContextValue {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
 
   const [savedTheme, setSavedTheme] = useState<ThemeType>(() => {
@@ -121,4 +121,4 @@ export const useThemeProvider = (): ThemeContextValue => {
     }),
     [savedTheme, currentTheme, themeStyles, setTheme, isDarkMode]
   );
-};
+}
