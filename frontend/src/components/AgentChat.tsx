@@ -37,7 +37,7 @@ export const AgentChat: React.FC<AgentChatProps> = ({ agentId, agentName, agentD
     chatService.currentAgentId = agentId;
   }, [chatService, agentId]);
 
-  const handleSendMessage = async(text: string, files?: File[]) => {
+  const handleSendMessage = async (text: string, files?: File[]) => {
     if (chat.status === 'streaming' || chat.status === 'sending') {
       dispatch({ type: 'CHAT_QUEUE_MESSAGE', text, files });
       return;

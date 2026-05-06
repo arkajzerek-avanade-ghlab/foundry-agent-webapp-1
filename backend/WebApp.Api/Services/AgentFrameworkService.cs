@@ -433,7 +433,7 @@ public class AgentFrameworkService : IDisposable
         // Always bind to conversation — the conversation maintains MCP approval state
         ProjectResponsesClient responsesClient
             = GetProjectClient().ProjectOpenAIClient.GetProjectResponsesClientForAgent(
-                new AgentReference(_effectiveAgentId, _agentVersion),
+                new AgentReference(_effectiveAgentId, _agentVersion), 
                 conversationId);
 
         // If continuing from MCP approval, add approval response items
