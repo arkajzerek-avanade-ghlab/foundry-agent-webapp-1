@@ -6,6 +6,7 @@ using Azure.Identity;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Foundry;
 using Microsoft.Extensions.AI;
+using OpenAI.Files;
 using OpenAI.Responses;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
@@ -55,6 +56,12 @@ public class AgentFrameworkService : IDisposable
     private static ManagedIdentityClientAssertion? s_miAssertion;
 
     private readonly IHttpClientFactory _httpClientFactory;
+
+    /// <summary>
+    /// Prefix applied to image files this web app uploads to the Foundry Files API,
+    /// used by the cleanup endpoint to scope deletes to files owned by this app.
+    /// </summary>
+    public const string WebAppUploadFilenamePrefix = "webapp-upload-";
 
     // Per-request project client
     private AIProjectClient? _projectClient;
@@ -150,12 +157,12 @@ public class AgentFrameworkService : IDisposable
         else if (!string.IsNullOrEmpty(_managedIdentityClientId))
         {
             _logger.LogInformation("Production: Using user-assigned ManagedIdentityCredential: {MiClientId}", _managedIdentityClientId);
-            _fallbackCredential = new ManagedIdentityCredential(_managedIdentityClientId);
+            _fallbackCredential = new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(_managedIdentityClientId));
         }
         else
         {
             _logger.LogInformation("Production: Using ManagedIdentityCredential (system-assigned)");
-            _fallbackCredential = new ManagedIdentityCredential();
+            _fallbackCredential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
         }
 
         if (_useObo)
@@ -452,7 +459,7 @@ public class AgentFrameworkService : IDisposable
             }
 
             // Build user message with optional images and files
-            ResponseItem userMessage = BuildUserMessage(message, imageDataUris, fileDataUris);
+            ResponseItem userMessage = await BuildUserMessageAsync(message, imageDataUris, fileDataUris, cancellationToken);
             options.InputItems.Add(userMessage);
         }
 
@@ -630,12 +637,14 @@ public class AgentFrameworkService : IDisposable
 
     /// <summary>
     /// Builds a ResponseItem for the user message with optional image and file attachments.
-    /// Validates count, size, MIME type, and Base64 format for both images and documents.
+    /// Validates count, size, MIME type, and Base64 format. Image bytes are uploaded to the
+    /// Foundry Files API (purpose: assistants) and referenced by file id.
     /// </summary>
-    private static ResponseItem BuildUserMessage(
-        string message, 
+    private async Task<ResponseItem> BuildUserMessageAsync(
+        string message,
         List<string>? imageDataUris,
-        List<FileAttachment>? fileDataUris = null)
+        List<FileAttachment>? fileDataUris,
+        CancellationToken cancellationToken)
     {
         if ((imageDataUris == null || imageDataUris.Count == 0) && 
             (fileDataUris == null || fileDataUris.Count == 0))
@@ -683,8 +692,32 @@ public class AgentFrameworkService : IDisposable
                     continue;
                 }
 
-                contentParts.Add(ResponseContentPart.CreateInputImagePart(
-                    new Uri($"data:{mediaType};base64,{Convert.ToBase64String(bytes)}")));
+                // Upload image bytes via the OpenAI Files API and reference the returned file id.
+                // Foundry's Files proxy rejects purpose=vision/user_data with "Invalid file ContentType";
+                // purpose=assistants is the accepted path and the resulting file id works with
+                // CreateInputImagePart on the Responses API.
+                var fileClient = GetProjectClient().ProjectOpenAIClient.GetOpenAIFileClient();
+                var extension = mediaType switch
+                {
+                    "image/png" => ".png",
+                    "image/jpeg" => ".jpg",
+                    "image/gif" => ".gif",
+                    "image/webp" => ".webp",
+                    _ => ".bin",
+                };
+                // Prefix uploaded filenames so the cleanup endpoint can identify files uploaded
+                // by this web app versus other files in the shared Foundry project.
+                var imageFileName = $"{WebAppUploadFilenamePrefix}{Guid.NewGuid():N}{extension}";
+                using var imageStream = new MemoryStream(bytes);
+                // Azure Foundry Files API only accepts purpose = assistants | batch | fine-tune | evals.
+                // Use purpose=assistants per Azure Responses API docs.
+                // See: learn.microsoft.com/azure/foundry/openai/how-to/responses#file-input
+                var uploaded = await fileClient.UploadFileAsync(
+                    imageStream,
+                    imageFileName,
+                    FileUploadPurpose.Assistants,
+                    cancellationToken);
+                contentParts.Add(ResponseContentPart.CreateInputImagePart(uploaded.Value.Id));
             }
         }
 
@@ -1200,6 +1233,79 @@ public class AgentFrameworkService : IDisposable
     /// </summary>
     public (int InputTokens, int OutputTokens, int TotalTokens)? GetLastUsage() =>
         _lastUsage is null ? null : (_lastUsage.InputTokenCount, _lastUsage.OutputTokenCount, _lastUsage.TotalTokenCount);
+
+    /// <summary>
+    /// Returns a count and total byte size of files uploaded by this web app (identified by
+    /// filename prefix <see cref="WebAppUploadFilenamePrefix"/>) that are still stored in the
+    /// Foundry project. Uses <see cref="FilePurpose.Assistants"/> because that is the purpose
+    /// under which <see cref="BuildUserMessageAsync"/> stores image uploads.
+    /// </summary>
+    public async Task<UploadedFilesInfo> ListUploadedFilesAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var fileClient = GetProjectClient().ProjectOpenAIClient.GetOpenAIFileClient();
+        var result = await fileClient.GetFilesAsync(FilePurpose.Assistants, cancellationToken);
+
+        int count = 0;
+        long totalBytes = 0;
+        foreach (var file in result.Value)
+        {
+            if (file.Filename != null && file.Filename.StartsWith(WebAppUploadFilenamePrefix, StringComparison.Ordinal))
+            {
+                count++;
+                totalBytes += file.SizeInBytesLong ?? file.SizeInBytes ?? 0;
+            }
+        }
+
+        _logger.LogInformation("ListUploadedFiles: {Count} files, {TotalBytes} bytes", count, totalBytes);
+        return new UploadedFilesInfo(count, totalBytes);
+    }
+
+    /// <summary>
+    /// Deletes every file in the Foundry project whose filename begins with
+    /// <see cref="WebAppUploadFilenamePrefix"/>. Intended as a user-triggered cleanup
+    /// because the GA Files API does not expose <c>expires_after</c> on upload — see README
+    /// "Known limitations". Returns counts of successful and failed deletions; failures are
+    /// logged but do not abort the loop.
+    /// </summary>
+    public async Task<UploadedFilesCleanupResult> CleanupUploadedFilesAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var fileClient = GetProjectClient().ProjectOpenAIClient.GetOpenAIFileClient();
+        var result = await fileClient.GetFilesAsync(FilePurpose.Assistants, cancellationToken);
+
+        int deleted = 0;
+        int failed = 0;
+        foreach (var file in result.Value)
+        {
+            if (file.Filename == null || !file.Filename.StartsWith(WebAppUploadFilenamePrefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                await fileClient.DeleteFileAsync(file.Id, cancellationToken);
+                deleted++;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                failed++;
+                _logger.LogWarning(ex, "Failed to delete uploaded file {FileId} ({FileName})", file.Id, file.Filename);
+            }
+        }
+
+        _logger.LogInformation("CleanupUploadedFiles: deleted={Deleted} failed={Failed}", deleted, failed);
+        return new UploadedFilesCleanupResult(deleted, failed);
+    }
 
     public void Dispose()
     {

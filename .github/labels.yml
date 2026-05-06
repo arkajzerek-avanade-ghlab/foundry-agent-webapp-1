@@ -1,0 +1,55 @@
+# GitHub label definitions for foundry-agent-webapp
+# Apply with: gh label import .github/labels.yml
+# or use the github-action-sync-labels action.
+
+- name: bug
+  color: d73a4a
+  description: Something isn't working
+
+- name: enhancement
+  color: a2eeef
+  description: New feature or request
+
+- name: documentation
+  color: 0075ca
+  description: Improvements or additions to documentation
+
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers
+
+- name: help wanted
+  color: 008672
+  description: Extra attention is needed
+
+- name: question
+  color: d876e3
+  description: Further information is requested
+
+- name: daily-status
+  color: e4e669
+  description: Automatically created by the daily-repo-status workflow
+
+- name: dependencies
+  color: 0366d6
+  description: Pull requests that update a dependency file
+
+- name: infrastructure
+  color: b60205
+  description: Changes to Bicep templates or Azure infrastructure
+
+- name: auth
+  color: f9d0c4
+  description: Authentication and authorization (MSAL, OBO, Managed Identity)
+
+- name: frontend
+  color: c5def5
+  description: React / TypeScript frontend changes
+
+- name: backend
+  color: bfd4f2
+  description: ASP.NET Core backend changes
+
+- name: deployment
+  color: fbca04
+  description: Deployment, azd, Container Apps, or CI/CD changes

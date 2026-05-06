@@ -274,6 +274,7 @@ export const AgentChat: React.FC<AgentChatProps> = ({ agentId, agentName, agentD
       <SettingsPanel
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
+        chatService={chatService}
       />
     </div>
   );
