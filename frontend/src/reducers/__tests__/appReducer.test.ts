@@ -1450,6 +1450,193 @@ describe('appReducer', () => {
     });
   });
 
+  describe('AGENTS_LOADING', () => {
+    it('sets isLoading to true', () => {
+      const state = createInitialState();
+      const result = appReducer(state, { type: 'AGENTS_LOADING' });
+      expect(result.agents.isLoading).toBe(true);
+    });
+
+    it('preserves available agents and currentAgentId', () => {
+      const state = createInitialState();
+      state.agents.available = [{ id: 'a1', object: 'agent', createdAt: 1, name: 'Agent 1', model: 'gpt-4' }];
+      state.agents.currentAgentId = 'a1';
+      const result = appReducer(state, { type: 'AGENTS_LOADING' });
+      expect(result.agents.available).toHaveLength(1);
+      expect(result.agents.currentAgentId).toBe('a1');
+    });
+  });
+
+  describe('AGENTS_SET_LIST', () => {
+    const agent1 = { id: 'a1', object: 'agent', createdAt: 1, name: 'Agent 1', model: 'gpt-4' };
+    const agent2 = { id: 'a2', object: 'agent', createdAt: 2, name: 'Agent 2', model: 'gpt-4' };
+
+    it('sets available agents and clears isLoading', () => {
+      const state = createInitialState();
+      state.agents.isLoading = true;
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [agent1, agent2] });
+      expect(result.agents.available).toEqual([agent1, agent2]);
+      expect(result.agents.isLoading).toBe(false);
+    });
+
+    it('uses first agent when no currentAgentId in state or localStorage', () => {
+      localStorage.clear();
+      const state = createInitialState();
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [agent1, agent2] });
+      expect(result.agents.currentAgentId).toBe('a1');
+    });
+
+    it('preserves currentAgentId when agent exists in the new list', () => {
+      localStorage.clear();
+      const state = createInitialState();
+      state.agents.currentAgentId = 'a2';
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [agent1, agent2] });
+      expect(result.agents.currentAgentId).toBe('a2');
+    });
+
+    it('falls back to first agent when currentAgentId no longer exists in new list', () => {
+      localStorage.clear();
+      const state = createInitialState();
+      state.agents.currentAgentId = 'old-agent';
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [agent1, agent2] });
+      expect(result.agents.currentAgentId).toBe('a1');
+    });
+
+    it('uses localStorage agent when state has no currentAgentId and localStorage has a valid one', () => {
+      localStorage.setItem('selectedAgentId', 'a2');
+      const state = createInitialState();
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [agent1, agent2] });
+      expect(result.agents.currentAgentId).toBe('a2');
+      localStorage.clear();
+    });
+
+    it('sets currentAgentId to null when agents list is empty', () => {
+      localStorage.clear();
+      const state = createInitialState();
+      const result = appReducer(state, { type: 'AGENTS_SET_LIST', agents: [] });
+      expect(result.agents.currentAgentId).toBeNull();
+    });
+  });
+
+  describe('AGENTS_SELECT', () => {
+    const agent1 = { id: 'a1', object: 'agent', createdAt: 1, name: 'Agent 1', model: 'gpt-4' };
+
+    it('sets currentAgentId', () => {
+      const state = createInitialState();
+      const result = appReducer(state, { type: 'AGENTS_SELECT', agentId: 'a1' });
+      expect(result.agents.currentAgentId).toBe('a1');
+    });
+
+    it('saves selection to localStorage', () => {
+      localStorage.clear();
+      const state = createInitialState();
+      appReducer(state, { type: 'AGENTS_SELECT', agentId: 'a1' });
+      expect(localStorage.getItem('selectedAgentId')).toBe('a1');
+      localStorage.clear();
+    });
+
+    it('resets chat to idle empty state', () => {
+      const state = createInitialState();
+      state.agents.available = [agent1];
+      state.chat.messages = [createMockMessage()];
+      state.chat.status = 'streaming';
+      state.chat.currentConversationId = 'conv-1';
+      const result = appReducer(state, { type: 'AGENTS_SELECT', agentId: 'a1' });
+      expect(result.chat.messages).toHaveLength(0);
+      expect(result.chat.status).toBe('idle');
+      expect(result.chat.currentConversationId).toBeNull();
+      expect(result.chat.error).toBeNull();
+    });
+
+    it('resets conversations to empty state', () => {
+      const state = createInitialState();
+      state.conversations.list = [{ id: 'c1', title: 'Conv', createdAt: 1 }];
+      state.conversations.sidebarOpen = true;
+      const result = appReducer(state, { type: 'AGENTS_SELECT', agentId: 'a1' });
+      expect(result.conversations.list).toHaveLength(0);
+      expect(result.conversations.sidebarOpen).toBe(false);
+    });
+
+    it('enables chat input', () => {
+      const state = createInitialState();
+      state.ui.chatInputEnabled = false;
+      const result = appReducer(state, { type: 'AGENTS_SELECT', agentId: 'a1' });
+      expect(result.ui.chatInputEnabled).toBe(true);
+    });
+  });
+
+  describe('CHAT_CANCEL_EDIT', () => {
+    it('returns unchanged state when editSnapshot is undefined', () => {
+      const state = createInitialState();
+      state.chat.editSnapshot = undefined;
+      const result = appReducer(state, { type: 'CHAT_CANCEL_EDIT' });
+      expect(result).toBe(state);
+    });
+
+    it('restores messages from editSnapshot', () => {
+      const state = createInitialState();
+      const existingMsg = createMockMessage({ id: 'msg-1', role: 'user', content: 'Hello' });
+      const snapshotMsg = createMockMessage({ id: 'msg-2', role: 'assistant', content: 'Hi' });
+      state.chat.messages = [existingMsg];
+      state.chat.editSnapshot = [snapshotMsg];
+      state.chat.recoveredInput = 'draft text';
+      const result = appReducer(state, { type: 'CHAT_CANCEL_EDIT' });
+      expect(result.chat.messages).toHaveLength(2);
+      expect(result.chat.messages[0]).toEqual(existingMsg);
+      expect(result.chat.messages[1]).toEqual(snapshotMsg);
+    });
+
+    it('clears editSnapshot, recoveredInput and recoveredAttachments', () => {
+      const state = createInitialState();
+      state.chat.editSnapshot = [createMockMessage({ id: 'snap-1' })];
+      state.chat.recoveredInput = 'some text';
+      state.chat.recoveredAttachments = [{ id: 'f1', name: 'file.txt', size: 100, mimeType: 'text/plain', url: 'blob:x' }];
+      const result = appReducer(state, { type: 'CHAT_CANCEL_EDIT' });
+      expect(result.chat.editSnapshot).toBeUndefined();
+      expect(result.chat.recoveredInput).toBeUndefined();
+      expect(result.chat.recoveredAttachments).toBeUndefined();
+    });
+
+    it('restores empty snapshot (all messages removed during edit)', () => {
+      const state = createInitialState();
+      state.chat.messages = [];
+      state.chat.editSnapshot = [createMockMessage({ id: 'msg-1' }), createMockMessage({ id: 'msg-2' })];
+      const result = appReducer(state, { type: 'CHAT_CANCEL_EDIT' });
+      expect(result.chat.messages).toHaveLength(2);
+    });
+  });
+
+  describe('CHAT_REGENERATE - no preceding user message', () => {
+    it('removes only the assistant message when no user message precedes it', () => {
+      const state = createInitialState();
+      const assistantMsg = createMockMessage({ id: 'msg-1', role: 'assistant', content: 'Response' });
+      state.chat.messages = [assistantMsg];
+      const result = appReducer(state, { type: 'CHAT_REGENERATE' });
+      expect(result.chat.messages).toHaveLength(0);
+      expect(result.chat.regenerateText).toBeUndefined();
+    });
+  });
+
+  describe('CONVERSATIONS_SET_LIST - deduplication', () => {
+    it('deduplicates conversations by id when appending', () => {
+      const state = createInitialState();
+      state.conversations.list = [{ id: 'c1', title: 'Conv 1', createdAt: 1 }];
+      const result = appReducer(state, {
+        type: 'CONVERSATIONS_SET_LIST',
+        conversations: [
+          { id: 'c1', title: 'Conv 1 duplicate', createdAt: 1 },
+          { id: 'c2', title: 'Conv 2', createdAt: 2 },
+        ],
+        hasMore: false,
+        append: true,
+      });
+      expect(result.conversations.list).toHaveLength(2);
+      expect(result.conversations.list[0].id).toBe('c1');
+      expect(result.conversations.list[0].title).toBe('Conv 1');
+      expect(result.conversations.list[1].id).toBe('c2');
+    });
+  });
+
   describe('state shape', () => {
     it('snapshot drifts when state fields are added or removed', () => {
       const getShape = (obj: Record<string, unknown>, prefix = ''): string[] => {
