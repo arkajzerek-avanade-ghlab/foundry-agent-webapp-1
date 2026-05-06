@@ -31,13 +31,6 @@
         "description": "AI Agent endpoint (auto-discovered by preprovision hook)"
       }
     },
-    "aiAgentId": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "AI Agent ID (configured via azd env set AI_AGENT_ID)"
-      }
-    },
     "entraTenantId": {
       "type": "string",
       "defaultValue": "[tenant().tenantId]",
@@ -705,9 +698,6 @@
           "aiAgentEndpoint": {
             "value": "[parameters('aiAgentEndpoint')]"
           },
-          "aiAgentId": {
-            "value": "[parameters('aiAgentId')]"
-          },
           "entraSpaClientId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))), 'Microsoft.Resources/deployments', 'entra-app'), '2025-04-01').outputs.clientAppId.value]"
           },
@@ -752,9 +742,6 @@
               "type": "string"
             },
             "aiAgentEndpoint": {
-              "type": "string"
-            },
-            "aiAgentId": {
               "type": "string"
             },
             "entraSpaClientId": {
@@ -809,10 +796,6 @@
               {
                 "name": "AI_AGENT_ENDPOINT",
                 "value": "[parameters('aiAgentEndpoint')]"
-              },
-              {
-                "name": "AI_AGENT_ID",
-                "value": "[parameters('aiAgentId')]"
               }
             ],
             "miEnv": [

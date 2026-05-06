@@ -88,14 +88,14 @@ if ($portalEndpoint -or $portalAgentId -or $portalResourceId) {
     }
 
     if ($portalAgentId) {
-        $currentAgentId = (azd env get-value AI_AGENT_ID 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
-        if ([string]::IsNullOrWhiteSpace($currentAgentId)) {
+        $currentAgentIds = (azd env get-value AI_AGENT_IDS 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
+        if ([string]::IsNullOrWhiteSpace($currentAgentIds)) {
             # Portal format is "name:version" (e.g. "dadjokes:2") — split and map
             # If no version suffix, AI_AGENT_VERSION remains unset (defaults to latest)
             $parts = $portalAgentId -split ':', 2
             $agentName = $parts[0].Trim()
-            azd env set AI_AGENT_ID $agentName
-            Write-Host "[OK] Mapped AZURE_EXISTING_AGENT_ID -> AI_AGENT_ID=$agentName" -ForegroundColor Green
+            azd env set AI_AGENT_IDS $agentName
+            Write-Host "[OK] Mapped AZURE_EXISTING_AGENT_ID -> AI_AGENT_IDS=$agentName" -ForegroundColor Green
 
             $agentVersion = if ($parts.Count -gt 1) { $parts[1].Trim() } else { '' }
             if ($agentVersion) {
@@ -218,19 +218,19 @@ if ([string]::IsNullOrWhiteSpace($existingEndpoint)) {
 }
 
 # Discover agent if not set
-$agentId = (azd env get-value AI_AGENT_ID 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
+$agentId = (azd env get-value AI_AGENT_IDS 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
 if ([string]::IsNullOrWhiteSpace($agentId)) {
     try {
         $agents = & "$PSScriptRoot/modules/Get-AIFoundryAgents.ps1" -ProjectEndpoint $aiEndpoint
         if ($agents -and $agents.Count -gt 0) {
             $agentId = $agents[0].name
-            azd env set AI_AGENT_ID $agentId
+            azd env set AI_AGENT_IDS $agentId
             Write-Host "[OK] Agent: $agentId" -ForegroundColor Green
         }
     } catch { }
 }
 if ([string]::IsNullOrWhiteSpace($agentId)) {
-    Write-Host "[ERROR] AI_AGENT_ID required. Run: azd env set AI_AGENT_ID <name>" -ForegroundColor Red
+    Write-Host "[ERROR] AI_AGENT_IDS required. Run: azd env set AI_AGENT_IDS <name>" -ForegroundColor Red
     exit 1
 }
 

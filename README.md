@@ -147,7 +147,7 @@ The workspace includes optimized VS Code configuration for AI-assisted developme
 
 ### Coming from the AI Foundry Portal
 
-The portal's "View sample app code" dialog provides AI resource variables (`AI_AGENT_ENDPOINT`, `AI_AGENT_ID`, etc.), which tell the app *which agent to talk to*. This solution supports **prompt agents** and can load **multiple agents** from a comma-separated `AI_AGENT_IDS` value. However, this app also requires an **Entra ID app registration** for user authentication — which the portal does not create. Running `azd up` creates it, along with the `.env` files that wire everything together.
+The portal's "View sample app code" dialog provides AI resource variables (`AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`, etc.), which tell the app *which agent to talk to*. This solution supports **prompt agents** and can load **multiple agents** from a comma-separated `AI_AGENT_IDS` value. However, this app also requires an **Entra ID app registration** for user authentication — which the portal does not create. Running `azd up` creates it, along with the `.env` files that wire everything together.
 
 **What the portal gives you**: AI Foundry project endpoint and agent IDs (prompt agents are supported).
 **What `azd up` adds**: Entra app registration, JWT auth config, redirect URIs, RBAC grants, Azure infrastructure.
@@ -185,20 +185,14 @@ azd provision  # Updates RBAC for new resource
 # List all agents in configured project
 .\deployment\scripts\list-agents.ps1
 
-# Recommended: create your prompt agents first, then configure multi-agent mode
+# Set agents (single or multiple)
+azd env set AI_AGENT_IDS "<agent-name>"
+# Or for multiple agents:
 azd env set AI_AGENT_IDS "<agent-name-1>,<agent-name-2>"
-azd env set AI_AGENT_ID ""
 # No provision needed - RBAC already grants access to all agents in the resource
 
 # Update the running Container App immediately (no redeploy)
 .\deployment\scripts\set-container-agent-settings.ps1 -AgentIds "<agent-name-1>,<agent-name-2>"
-
-# Optional single-agent mode
-azd env set AI_AGENT_ID <agent-name>
-azd env set AI_AGENT_IDS ""
-
-# Apply single-agent mode on running Container App
-.\deployment\scripts\set-container-agent-settings.ps1 -SingleAgent -AgentId "<agent-name>"
 ```
 
 > 💡 `azd provision` (or `azd up`) automatically regenerates `.env` files and updates RBAC assignments when configuration changes.
@@ -260,7 +254,7 @@ Multiple layers catch incomplete setup before cryptic errors appear:
 | Layer | What It Checks | When It Runs |
 |-------|---------------|--------------|
 | **Vite env check plugin** | `VITE_ENTRA_SPA_CLIENT_ID`, `VITE_ENTRA_TENANT_ID` | Dev server startup (`npm run dev`) — serves a styled error page instead of the app |
-| **preToolUse hook** | Context-aware: frontend commands check frontend env, backend commands check backend env (including `AI_AGENT_ENDPOINT`, `AI_AGENT_ID`, `AI_AGENT_IDS`) | AI agents running dev commands — advisory message, non-blocking |
+| **preToolUse hook** | Context-aware: frontend commands check frontend env, backend commands check backend env (including `AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`) | AI agents running dev commands — advisory message, non-blocking |
 | **Validate Configuration task** | Both `.env` files with auth variables | On-demand via VS Code (`Tasks: Run Task` → `Validate Configuration`) |
 | **`validating-local-setup` skill** | Full diagnostic checklist with error patterns and step-by-step fixes | Loaded by AI agents when setup issues are detected |
 
@@ -292,7 +286,7 @@ All layers point to the same fix: run `azd up` from the repo root.
 | `azd deploy` | Deploy code changes only | 3-5 min |
 | `.\deployment\scripts\start-local-dev.ps1` | Start local development | Instant |
 | `.\deployment\scripts\list-agents.ps1` | List agents in your project | Instant |
-| `.\deployment\scripts\set-container-agent-settings.ps1` | Update `AI_AGENT_ID` / `AI_AGENT_IDS` on deployed Container App | Instant |
+| `.\deployment\scripts\set-container-agent-settings.ps1` | Update `AI_AGENT_IDS` on deployed Container App | Instant |
 | `azd provision` | Re-deploy infrastructure / update RBAC | 2-3 min |
 | `azd down --force --purge` | Delete all Azure resources | 2-3 min |
 

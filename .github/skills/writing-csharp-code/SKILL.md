@@ -180,7 +180,7 @@ app.MapFallbackToFile("index.html");  // MUST BE LAST
 - Disposal guards (`ObjectDisposedException.ThrowIf`) in all public methods
 - Environment-aware credential selection (ChainedTokenCredential vs ManagedIdentityCredential vs OnBehalfOfCredential)
 - Static-cached `ProjectsAgentVersion` resolved once per process via `SemaphoreSlim`
-- Configuration validation (`AI_AGENT_ENDPOINT`, `AI_AGENT_ID`, optional `AI_AGENT_VERSION`)
+- Configuration validation (`AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`, optional `AI_AGENT_VERSION`)
 
 **Agent Loading** (direct SDK):
 ```csharp

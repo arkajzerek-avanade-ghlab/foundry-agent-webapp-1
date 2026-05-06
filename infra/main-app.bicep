@@ -4,7 +4,6 @@ param resourceToken string
 param containerAppsEnvironmentId string
 param containerRegistryName string
 param aiAgentEndpoint string
-param aiAgentId string
 param entraSpaClientId string
 param entraTenantId string
 param entraBackendClientId string = ''
@@ -37,10 +36,6 @@ var baseEnv = [
   {
     name: 'AI_AGENT_ENDPOINT'
     value: aiAgentEndpoint
-  }
-  {
-    name: 'AI_AGENT_ID'
-    value: aiAgentId
   }
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

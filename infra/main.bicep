@@ -13,9 +13,6 @@ param location string
 @description('AI Agent endpoint (auto-discovered by preprovision hook)')
 param aiAgentEndpoint string = ''
 
-@description('AI Agent ID (configured via azd env set AI_AGENT_ID)')
-param aiAgentId string = ''
-
 @description('Entra ID Tenant ID (set by azd hook or auto-detected)')
 param entraTenantId string = tenant().tenantId
 
@@ -90,7 +87,6 @@ module app 'main-app.bicep' = {
     containerAppsEnvironmentId: infrastructure.outputs.containerAppsEnvironmentId
     containerRegistryName: infrastructure.outputs.containerRegistryName
     aiAgentEndpoint: aiAgentEndpoint
-    aiAgentId: aiAgentId
     entraSpaClientId: resolvedSpaClientId
     entraTenantId: entraTenantId
     entraBackendClientId: resolvedBackendClientId

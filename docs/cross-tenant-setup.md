@@ -146,7 +146,7 @@ if ([string]::IsNullOrWhiteSpace($containerAppName) -or [string]::IsNullOrWhiteS
 az containerapp show `
   --name $containerAppName `
   --resource-group $resourceGroupName `
-  --query "properties.template.containers[0].env[?name=='AI_AGENT_ENDPOINT' || name=='AI_AGENT_ID' || name=='AI_AGENT_IDS'].{name:name,value:value}" `
+  --query "properties.template.containers[0].env[?name=='AI_AGENT_ENDPOINT' || name=='AI_AGENT_IDS'].{name:name,value:value}" `
   -o table
 ```
 
@@ -156,7 +156,6 @@ Expected:
 |---|---|
 | `AI_AGENT_ENDPOINT` | `https://ai-account-7ccbhxrcshh52.services.ai.azure.com/api/projects/ai-project-azdai01` |
 | `AI_AGENT_IDS` | `summarization-agent,prompt-agent` |
-| `AI_AGENT_ID` | (empty for multi-agent mode) |
 
 If any value is wrong, update directly without a full redeploy:
 
@@ -171,7 +170,7 @@ if ([string]::IsNullOrWhiteSpace($containerAppName) -or [string]::IsNullOrWhiteS
 az containerapp update `
   --name $containerAppName `
   --resource-group $resourceGroupName `
-  --set-env-vars "AI_AGENT_ENDPOINT=<value>" "AI_AGENT_IDS=<agent-1,agent-2>" "AI_AGENT_ID="
+  --set-env-vars "AI_AGENT_ENDPOINT=<value>" "AI_AGENT_IDS=<agent-1,agent-2>"
 ```
 
 ---
@@ -184,7 +183,7 @@ az containerapp update `
 | Set Application ID URI | `postprovision.ps1` (same tenant only) | **Step 1** |
 | Add Container App redirect URI | `postprovision.ps1` (same tenant only) | **Step 2** |
 | Assign AI Foundry RBAC roles | `postprovision.ps1` | **Step 4** (if resource group/name was wrong) |
-| Set `AI_AGENT_ENDPOINT` / `AI_AGENT_ID` / `AI_AGENT_IDS` on Container App | Bicep (reads from `.env`) | **Step 5** (if `.env` was stale) |
+| Set `AI_AGENT_ENDPOINT` / `AI_AGENT_IDS` on Container App | Bicep (reads from `.env`) | **Step 5** (if `.env` was stale) |
 
 ---
 
@@ -192,6 +191,6 @@ az containerapp update `
 
 Every time `azd provision` runs (e.g., to update infrastructure), Bicep recreates the Container App revision from `.env` values. Verify:
 
-1. `.azure/fndragntweb01/.env` has the correct `AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`, `AI_AGENT_ID` (empty for multi-agent mode), `AI_FOUNDRY_RESOURCE_GROUP`, and `AI_FOUNDRY_RESOURCE_NAME`.
+1. `.azure/fndragntweb01/.env` has the correct `AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`, `AI_FOUNDRY_RESOURCE_GROUP`, and `AI_FOUNDRY_RESOURCE_NAME`.
 2. The redirect URI in the app registration tenant still includes the Container App URL (the FQDN is stable for this environment).
 3. RBAC roles on `ai-account-7ccbhxrcshh52` are still present (they persist across `azd` operations).
