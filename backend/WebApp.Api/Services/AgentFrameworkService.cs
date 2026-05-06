@@ -90,15 +90,7 @@ public class AgentFrameworkService : IDisposable
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-        // AI_AGENT_ID is optional when AI_AGENT_IDS is set; default falls back to first entry
-        var explicitDefault = configuration["AI_AGENT_ID"];
-        if (!string.IsNullOrWhiteSpace(explicitDefault))
-        {
-            _defaultAgentId = explicitDefault;
-            if (!_configuredAgentIds.Contains(_defaultAgentId, StringComparer.OrdinalIgnoreCase))
-                _configuredAgentIds.Insert(0, _defaultAgentId);
-        }
-        else if (_configuredAgentIds.Count > 0)
+        if (_configuredAgentIds.Count > 0)
         {
             _defaultAgentId = _configuredAgentIds[0];
         }
@@ -264,7 +256,7 @@ public class AgentFrameworkService : IDisposable
 
     /// <summary>
     /// Get the list of configured agent IDs and the default.
-    /// If neither AI_AGENT_ID nor AI_AGENT_IDS was set, agents are discovered dynamically
+    /// If AI_AGENT_IDS was not set, agents are discovered dynamically
     /// from AI Foundry on the first call; the first returned agent becomes the default.
     /// Throws <see cref="InvalidOperationException"/> if dynamic discovery returns no agents.
     /// </summary>
@@ -316,7 +308,7 @@ public class AgentFrameworkService : IDisposable
             if (ids.Count == 0)
                 throw new InvalidOperationException(
                     "Dynamic agent discovery found no agents in the AI Foundry project. " +
-                    "Set AI_AGENT_ID or AI_AGENT_IDS to configure agents explicitly.");
+                    "Set AI_AGENT_IDS to configure agents explicitly.");
 
             _logger.LogInformation(
                 "Discovered {Count} agent(s) dynamically: {Names}", ids.Count, string.Join(", ", ids));

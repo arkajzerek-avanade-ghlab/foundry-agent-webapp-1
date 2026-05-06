@@ -11,12 +11,11 @@ description: >
 
 ## Portal vs `azd up` — What Each Provides
 
-The AI Foundry portal's "View sample app code" gives you AI resource variables (`AI_AGENT_ENDPOINT`, `AI_AGENT_ID`), which identify your agent. However, this app also needs an **Entra ID app registration** for user authentication — which only `azd up` creates. Both sets of config are required.
+The AI Foundry portal's "View sample app code" gives you AI resource variables (`AI_AGENT_ENDPOINT`, `AI_AGENT_IDS`), which identify your agent. However, this app also needs an **Entra ID app registration** for user authentication — which only `azd up` creates. Both sets of config are required.
 
 | Source | What It Provides | Config It Generates |
 |--------|-----------------|-------------------|
-| **AI Foundry portal** | Agent endpoint + agent ID | Root `.env` (or manual `azd env set`) |
-| **`azd up`** | Entra app registration, RBAC, infrastructure | `frontend/.env.local` + `backend/WebApp.Api/.env` |
+| **AI Foundry portal** | Agent endpoint + agent ID | Root `.env` (or manual `azd env set`) || **`azd up`** | Entra app registration, RBAC, infrastructure | `frontend/.env.local` + `backend/WebApp.Api/.env` |
 
 If you came from the portal, paste those values and run `azd up` — it detects them and incorporates them automatically.
 
@@ -61,7 +60,7 @@ This app requires `azd up` before local development works. Here's what it provis
 | `AzureAd__ClientId` | Entra app registration | Yes |
 | `AzureAd__Audience` | `api://{ClientId}` | Yes |
 | `AI_AGENT_ENDPOINT` | AI Foundry project endpoint | Yes |
-| `AI_AGENT_ID` | Agent name in Foundry | Yes |
+| `AI_AGENT_IDS` | Comma-separated agent names in Foundry | Yes |
 
 ## Common Error Patterns
 

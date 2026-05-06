@@ -189,7 +189,7 @@ if ($webIdentityPrincipalId -and $aiFoundryResourceGroup -and $aiFoundryResource
 
 # Generate local dev config files (moved from preprovision — clientId comes from Bicep)
 $aiAgentEndpoint = azd env get-value AI_AGENT_ENDPOINT 2>$null
-$aiAgentId = azd env get-value AI_AGENT_ID 2>$null
+$aiAgentIds = azd env get-value AI_AGENT_IDS 2>$null
 $aiAgentVersion = azd env get-value AI_AGENT_VERSION 2>$null
 
 # Frontend .env.local
@@ -211,7 +211,7 @@ AzureAd__TenantId=$tenantId
 AzureAd__ClientId=$clientId
 AzureAd__Audience=api://$clientId
 AI_AGENT_ENDPOINT=$aiAgentEndpoint
-AI_AGENT_ID=$aiAgentId
+AI_AGENT_IDS=$aiAgentIds
 "@
 if ($aiAgentVersion) {
     $backendEnvContent += "`nAI_AGENT_VERSION=$aiAgentVersion"

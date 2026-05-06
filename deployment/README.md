@@ -19,7 +19,7 @@ deployment/
 └── scripts/             # User-invoked scripts
   ├── start-local-dev.ps1          # Start native local development
   ├── list-agents.ps1              # List agents in the configured Foundry project
-  └── set-container-agent-settings.ps1  # Update AI_AGENT_ID / AI_AGENT_IDS directly on Container App
+  └── set-container-agent-settings.ps1  # Update AI_AGENT_IDS directly on Container App
 ```
 
 ## Build Strategy

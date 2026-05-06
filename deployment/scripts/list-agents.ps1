@@ -31,7 +31,7 @@ try {
         }
     } | Format-Table -AutoSize
     
-    Write-Host "To use: azd env set AI_AGENT_ID <name>" -ForegroundColor Gray
+    Write-Host "To use: azd env set AI_AGENT_IDS <name>" -ForegroundColor Gray
 } catch {
     Write-Host "[ERROR] $_" -ForegroundColor Red
     exit 1

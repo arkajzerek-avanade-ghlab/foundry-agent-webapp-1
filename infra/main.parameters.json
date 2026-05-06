@@ -20,8 +20,8 @@
     "aiAgentEndpoint": {
       "value": "${AI_AGENT_ENDPOINT=}"
     },
-    "aiAgentId": {
-      "value": "${AI_AGENT_ID=}"
+    "aiAgentIds": {
+      "value": "${AI_AGENT_IDS=}"
     },
     "enableObo": {
       "value": "${ENABLE_OBO=false}"

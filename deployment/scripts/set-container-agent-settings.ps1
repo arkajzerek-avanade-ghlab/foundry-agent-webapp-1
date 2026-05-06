@@ -6,8 +6,6 @@ param(
     [string]$ResourceGroupName,
     [string]$ContainerAppName,
     [string]$AgentIds,
-    [string]$AgentId,
-    [switch]$SingleAgent,
     [switch]$ShowOnly
 )
 
@@ -36,7 +34,7 @@ function Show-CurrentConfig {
     az containerapp show `
       --name $ContainerApp `
       --resource-group $ResourceGroup `
-      --query "properties.template.containers[0].env[?contains(['AI_AGENT_ID','AI_AGENT_IDS'], name)].{name:name,value:value}" `
+      --query "properties.template.containers[0].env[?name=='AI_AGENT_IDS'].{name:name,value:value}" `
       -o table
 }
 
@@ -62,33 +60,17 @@ if ($ShowOnly) {
     exit 0
 }
 
-if ($SingleAgent) {
-    if ([string]::IsNullOrWhiteSpace($AgentId)) {
-        Write-Host "[ERROR] Single-agent mode requires -AgentId." -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host "Applying single-agent mode (AI_AGENT_ID=$AgentId)..." -ForegroundColor Yellow
-
-    az containerapp update `
-      --name $ContainerAppName `
-      --resource-group $ResourceGroupName `
-      --set-env-vars "AI_AGENT_ID=$AgentId" `
-      --remove-env-vars AI_AGENT_IDS | Out-Null
-} else {
-    if ([string]::IsNullOrWhiteSpace($AgentIds)) {
-        Write-Host "[ERROR] Multi-agent mode requires -AgentIds (comma-separated)." -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host "Applying multi-agent mode (AI_AGENT_IDS=$AgentIds)..." -ForegroundColor Yellow
-
-    az containerapp update `
-      --name $ContainerAppName `
-      --resource-group $ResourceGroupName `
-      --set-env-vars "AI_AGENT_IDS=$AgentIds" `
-      --remove-env-vars AI_AGENT_ID | Out-Null
+if ([string]::IsNullOrWhiteSpace($AgentIds)) {
+    Write-Host "[ERROR] -AgentIds (comma-separated) is required." -ForegroundColor Red
+    exit 1
 }
+
+Write-Host "Applying agent configuration (AI_AGENT_IDS=$AgentIds)..." -ForegroundColor Yellow
+
+az containerapp update `
+  --name $ContainerAppName `
+  --resource-group $ResourceGroupName `
+  --set-env-vars "AI_AGENT_IDS=$AgentIds" | Out-Null
 
 Write-Host "Updated Container App settings. Current values:" -ForegroundColor Green
 Show-CurrentConfig -ResourceGroup $ResourceGroupName -ContainerApp $ContainerAppName

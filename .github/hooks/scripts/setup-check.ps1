@@ -84,8 +84,8 @@ try {
             if ($content -notmatch 'AI_AGENT_ENDPOINT=\S') {
                 $issues += "AI_AGENT_ENDPOINT is empty in backend/.env (backend will crash on first API call)"
             }
-            if ($content -notmatch 'AI_AGENT_ID=\S') {
-                $issues += "AI_AGENT_ID is empty in backend/.env (backend will crash on first API call)"
+            if ($content -notmatch 'AI_AGENT_IDS=\S') {
+                $issues += "AI_AGENT_IDS is empty in backend/.env (backend will crash on first API call)"
             }
         }
     }
