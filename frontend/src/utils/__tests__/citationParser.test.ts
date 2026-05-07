@@ -148,4 +148,36 @@ describe('parseContentWithCitations', () => {
       expect(result.processedText).toBe(content);
     });
   });
+
+  describe('second pass: unresolved 【†】 patterns', () => {
+    it('matches annotation by label when textToReplace is not set', () => {
+      // Annotation has no textToReplace so first pass skips it;
+      // second pass should match it by label and replace the pattern.
+      const content = 'Reference 【4:0†myfile.pdf】 here';
+      const annotations: IAnnotation[] = [
+        { type: 'file_citation', label: 'myfile.pdf', fileId: 'file-xyz' }
+      ];
+
+      const result = parseContentWithCitations(content, annotations);
+      expect(result.processedText).toBe('Reference [1] here');
+      expect(result.citations).toHaveLength(1);
+      expect(result.citations[0].annotation.label).toBe('myfile.pdf');
+      expect(result.citations[0].annotation.fileId).toBe('file-xyz');
+    });
+
+    it('creates a placeholder citation when no annotation matches the pattern', () => {
+      // Annotation label does not match the pattern label;
+      // second pass creates a synthetic placeholder citation.
+      const content = 'See 【99:0†mystery-label】 for details';
+      const annotations: IAnnotation[] = [
+        { type: 'uri_citation', label: 'other-label', url: 'https://example.com' }
+      ];
+
+      const result = parseContentWithCitations(content, annotations);
+      expect(result.processedText).toBe('See [1] for details');
+      expect(result.citations).toHaveLength(1);
+      expect(result.citations[0].annotation.type).toBe('file_citation');
+      expect(result.citations[0].annotation.label).toBe('mystery-label');
+    });
+  });
 });
