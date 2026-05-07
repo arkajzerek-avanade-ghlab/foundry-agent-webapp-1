@@ -6,7 +6,9 @@ import {
   validateFileCount,
   getEffectiveMimeType,
   convertFilesToDataUris,
+  createAttachmentMetadata,
 } from '../fileAttachments';
+import type { FileConversionResult } from '../fileAttachments';
 
 // Helper to create a mock File with specific properties
 function createMockFile(
@@ -288,5 +290,28 @@ describe('convertFilesToDataUris', () => {
     
     expect(results[0].mimeType).toBe('text/markdown');
     expect(results[0].dataUri).toMatch(/^data:text\/markdown;base64,/);
+  });
+});
+
+describe('createAttachmentMetadata', () => {
+  it('maps FileConversionResult array to IFileAttachment array', () => {
+    const results: FileConversionResult[] = [
+      { name: 'photo.png', dataUri: 'data:image/png;base64,abc', mimeType: 'image/png', sizeBytes: 1024 },
+      { name: 'doc.pdf', dataUri: 'data:application/pdf;base64,xyz', mimeType: 'application/pdf', sizeBytes: 2048 },
+    ];
+
+    const attachments = createAttachmentMetadata(results);
+
+    expect(attachments).toHaveLength(2);
+    expect(attachments[0].fileName).toBe('photo.png');
+    expect(attachments[0].fileSizeBytes).toBe(1024);
+    expect(attachments[0].dataUri).toBe('data:image/png;base64,abc');
+    expect(attachments[1].fileName).toBe('doc.pdf');
+    expect(attachments[1].fileSizeBytes).toBe(2048);
+  });
+
+  it('returns empty array for empty input', () => {
+    const attachments = createAttachmentMetadata([]);
+    expect(attachments).toHaveLength(0);
   });
 });
