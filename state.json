@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-05-07T22:34:00Z",
-  "run_id": "25525716090",
-  "tasks_run_this_session": ["task2", "task3", "task7"],
+  "last_updated": "2026-05-08T22:38:00Z",
+  "run_id": "25582650560",
+  "tasks_run_this_session": ["task4", "task3", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
     "frontend_coverage": "cd frontend && npm run test:coverage",
@@ -18,7 +18,8 @@
     "frontend_main_branch": 174,
     "frontend_with_pr18": 268,
     "frontend_with_pr24": 193,
-    "frontend_with_pr25": 178,
+    "frontend_with_pr26": 178,
+    "frontend_with_pr_chatservice": 189,
     "backend": 48
   },
   "open_prs": [
@@ -36,9 +37,15 @@
     },
     {
       "title": "[Test Improver] Add coverage for citationParser second-pass paths and createAttachmentMetadata",
-      "temp_id": "aw_pr25",
-      "branch": "test-assist/citation-fileattachment-coverage",
+      "number": 26,
+      "branch": "test-assist/citation-fileattachment-coverage-afb61292e33babad",
       "created": "2026-05-07"
+    },
+    {
+      "title": "[Test Improver] Add coverage for ChatService — file ops, SSE streaming, and dispatch helpers",
+      "number": "TBD",
+      "branch": "test-assist/chatservice-coverage-20260508",
+      "created": "2026-05-08"
     }
   ],
   "monthly_activity_issue": {
@@ -49,21 +56,15 @@
   "backlog": [
     {
       "file": "frontend/src/services/chatService.ts",
-      "coverage": "~11% stmts",
-      "priority": "high",
-      "note": "Complex SSE streaming; significant mocking effort needed"
+      "coverage": "65% stmts after new PR",
+      "priority": "medium",
+      "note": "sendMcpApproval and active-stream cancelStream remain uncovered; significant mocking effort needed"
     },
     {
       "file": "frontend/src/config/authConfig.ts",
       "coverage": "38% stmts",
       "priority": "low",
       "note": "MSAL config branches; needs env stubbing"
-    },
-    {
-      "file": "frontend/src/utils/citationParser.ts",
-      "coverage": "line 101: startIndex positional-match branch",
-      "priority": "low",
-      "note": "Requires very specific annotation structure+position combo; low value"
     }
   ],
   "covered": [
@@ -71,8 +72,9 @@
     "stripMarkdown.ts: 100% (PR #18)",
     "exportConversation.ts: ~100% (PR #18)",
     "appReducer.ts: 99% stmts / 95% branch / 100% funcs (PR #24)",
-    "citationParser.ts: 100% stmts / 95% branch / 100% funcs (PR aw_pr25)",
-    "fileAttachments.ts: 95.08% stmts / 91.66% funcs (PR aw_pr25)"
+    "citationParser.ts: 100% stmts / 95% branch / 100% funcs (PR #26)",
+    "fileAttachments.ts: 95.08% stmts / 91.66% funcs (PR #26)",
+    "chatService.ts: 65% stmts / 49% branch / 75% funcs (PR TBD, chatservice-coverage-20260508)"
   ],
   "notes": [
     "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
@@ -87,6 +89,10 @@
     "sseParser.ts line 82: unreachable due to trim() behavior - jsonString can never be empty when startsWith('data: ') is true",
     "citationParser.ts line 101: startIndex positional-match branch very hard to cover (low priority)",
     "fileAttachments.ts lines 174-175: FileReader reject path unreachable in jsdom (readAsDataURL always produces valid URI)",
-    "citationParser second pass: annotation without textToReplace is NOT added to annotationByPlaceholder map, so first pass skips it; second pass then matches by label"
+    "citationParser second pass: annotation without textToReplace is NOT added to annotationByPlaceholder map, so first pass skips it; second pass then matches by label",
+    "chatService SSE format: flat JSON {type:'chunk',content:'...'} NOT {event:'chunk',data:{content:'...'}}",
+    "vi.useFakeTimers() must be paired with vi.useRealTimers() inside each test - vi.restoreAllMocks() does NOT restore timers",
+    "chatService.sendMcpApproval and cancelStream-while-active remain uncovered (complex setup needed)",
+    "safeoutputs create_pull_request does not return PR number in response - must query GitHub afterwards"
   ]
 }
