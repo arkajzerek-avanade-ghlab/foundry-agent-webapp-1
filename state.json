@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-05-08T22:38:00Z",
-  "run_id": "25582650560",
+  "last_updated": "2026-05-09T22:07:00Z",
+  "run_id": "25612978121",
   "tasks_run_this_session": ["task4", "task3", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
@@ -19,8 +19,9 @@
     "frontend_with_pr18": 268,
     "frontend_with_pr24": 193,
     "frontend_with_pr26": 178,
-    "frontend_with_pr_chatservice": 189,
-    "backend": 48
+    "frontend_with_pr28": 189,
+    "backend_main_branch": 48,
+    "backend_with_streamchunk_pr": 69
   },
   "open_prs": [
     {
@@ -42,10 +43,16 @@
       "created": "2026-05-07"
     },
     {
-      "title": "[Test Improver] Add coverage for ChatService — file ops, SSE streaming, and dispatch helpers",
-      "number": "TBD",
-      "branch": "test-assist/chatservice-coverage-20260508",
+      "title": "[Test Improver] Add coverage for ChatService: file ops, SSE streaming, and dispatch helpers",
+      "number": 28,
+      "branch": "test-assist/chatservice-coverage-20260508-62f9fe8f81b7b427",
       "created": "2026-05-08"
+    },
+    {
+      "title": "[Test Improver] Add tests for StreamChunk model factory methods and computed properties",
+      "number": "TBD",
+      "branch": "test-assist/streamchunk-model-tests-20260509",
+      "created": "2026-05-09"
     }
   ],
   "monthly_activity_issue": {
@@ -56,7 +63,7 @@
   "backlog": [
     {
       "file": "frontend/src/services/chatService.ts",
-      "coverage": "65% stmts after new PR",
+      "coverage": "65% stmts after PR #28",
       "priority": "medium",
       "note": "sendMcpApproval and active-stream cancelStream remain uncovered; significant mocking effort needed"
     },
@@ -74,7 +81,8 @@
     "appReducer.ts: 99% stmts / 95% branch / 100% funcs (PR #24)",
     "citationParser.ts: 100% stmts / 95% branch / 100% funcs (PR #26)",
     "fileAttachments.ts: 95.08% stmts / 91.66% funcs (PR #26)",
-    "chatService.ts: 65% stmts / 49% branch / 75% funcs (PR TBD, chatservice-coverage-20260508)"
+    "chatService.ts: 65% stmts / 49% branch / 75% funcs (PR #28)",
+    "StreamChunk.cs: all factory methods + computed properties (PR TBD, streamchunk-model-tests-20260509, backend 48→69 tests)"
   ],
   "notes": [
     "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
@@ -93,6 +101,8 @@
     "chatService SSE format: flat JSON {type:'chunk',content:'...'} NOT {event:'chunk',data:{content:'...'}}",
     "vi.useFakeTimers() must be paired with vi.useRealTimers() inside each test - vi.restoreAllMocks() does NOT restore timers",
     "chatService.sendMcpApproval and cancelStream-while-active remain uncovered (complex setup needed)",
-    "safeoutputs create_pull_request does not return PR number in response - must query GitHub afterwards"
+    "safeoutputs create_pull_request does not return PR number in response - must query GitHub afterwards",
+    "StreamChunk.HasAnnotations returns false for empty list (by design - Annotations.Count > 0 check)",
+    "Backend test project: no shared fixtures needed - all tests are pure model tests, self-contained"
   ]
 }
