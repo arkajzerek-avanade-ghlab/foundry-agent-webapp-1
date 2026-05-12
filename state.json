@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-05-11T22:33:52Z",
-  "run_id": "25701202433",
+  "last_updated": "2026-05-12T22:41:16Z",
+  "run_id": "25766414936",
   "tasks_run_this_session": ["task3", "task4", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
@@ -22,6 +22,7 @@
     "frontend_with_pr28": 189,
     "frontend_with_pr32": 191,
     "frontend_with_useAppState_pr": 192,
+    "frontend_with_useThemeProvider_pr": 195,
     "backend_main_branch": 48,
     "backend_with_pr30": 69
   },
@@ -64,9 +65,15 @@
     },
     {
       "title": "[Test Improver] Add tests for useAppState, useChatState, and useUIState computed selectors",
-      "number": "TBD",
+      "number": 34,
       "branch": "test-assist/useAppState-tests-20260511",
       "created": "2026-05-11"
+    },
+    {
+      "title": "[Test Improver] Add tests for useThemeProvider hook: localStorage init, isDarkMode logic, setTheme persistence",
+      "number": "TBD",
+      "branch": "test-assist/useThemeProvider-tests-20260512",
+      "created": "2026-05-12"
     }
   ],
   "monthly_activity_issue": {
@@ -88,10 +95,10 @@
       "note": "MSAL config branches; needs env stubbing"
     },
     {
-      "file": "frontend/src/hooks/useThemeProvider.ts",
-      "coverage": "0% on main",
-      "priority": "medium",
-      "note": "Theme persistence + media query logic; needs window.matchMedia mock (jsdom doesn't provide it). Mock pattern: vi.fn().mockReturnValue({matches:false, addEventListener:vi.fn(), removeEventListener:vi.fn()})"
+      "file": "frontend/src/hooks/useMediaQuery (effect path)",
+      "coverage": "effect body uncovered",
+      "priority": "low",
+      "note": "addEventListener/removeEventListener dispatch requires @testing-library/react (not installed)"
     }
   ],
   "covered": [
@@ -104,7 +111,8 @@
     "chatService.ts: 65% stmts / 49% branch / 75% funcs (PR #28)",
     "StreamChunk.cs: all factory methods + computed properties (PR #30, backend 48→69 tests)",
     "useFormatTimestamp.ts: ~100% stmts all 7 branches (PR #32, 174→191 frontend tests)",
-    "useAppState.ts: ~100% all computed selectors (PR TBD, 174→192 frontend tests +18)"
+    "useAppState.ts: ~100% all computed selectors (PR #34, 174→192 frontend tests +18)",
+    "useThemeProvider.ts: 69.23% stmts / 59.09% branch / 64.28% funcs (PR TBD, 174→195 frontend tests +21)"
   ],
   "notes": [
     "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
@@ -131,6 +139,10 @@
     "@testing-library/react NOT installed - use vi.mock('react', useMemo:fn=>fn()) for hook tests",
     "useAppState: vi.mock react useMemo→fn() pattern allows direct hook call without render context; useMemo is pure computation so this is safe",
     "useAppState: mock useAppContext via vi.mock('../../contexts/AppContext') with module-level mockState variable mutated per test",
-    "useThemeProvider: window.matchMedia not available in jsdom - must mock before testing useMediaQuery"
+    "useThemeProvider: window.matchMedia not available in jsdom - must mock before module import via Object.defineProperty",
+    "useThemeProvider: mock useState→calls initializer (captures localStorage/matchMedia), useEffect→vi.fn() no-op, useMemo→fn(), useCallback→identity",
+    "useThemeProvider: useEffect bodies (event listener setup + document.colorScheme) remain uncovered; require real React lifecycle",
+    "useThemeProvider: setTheme localStorage.setItem is testable since jsdom provides localStorage; internal setSavedTheme setter is vi.fn()",
+    "useThemeProvider: invalid localStorage value falls back to 'System' via ['Light','Dark','System'].includes() check"
   ]
 }
