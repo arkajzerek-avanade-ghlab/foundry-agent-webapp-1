@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-05-12T22:41:16Z",
-  "run_id": "25766414936",
-  "tasks_run_this_session": ["task3", "task4", "task7"],
+  "last_updated": "2026-05-13T22:50:00Z",
+  "run_id": "25830723530",
+  "tasks_run_this_session": ["task2", "task4", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
     "frontend_coverage": "cd frontend && npm run test:coverage",
@@ -66,13 +66,13 @@
     {
       "title": "[Test Improver] Add tests for useAppState, useChatState, and useUIState computed selectors",
       "number": 34,
-      "branch": "test-assist/useAppState-tests-20260511",
+      "branch": "test-assist/useAppState-tests-20260511-440ed63e69789dbe",
       "created": "2026-05-11"
     },
     {
       "title": "[Test Improver] Add tests for useThemeProvider hook: localStorage init, isDarkMode logic, setTheme persistence",
-      "number": "TBD",
-      "branch": "test-assist/useThemeProvider-tests-20260512",
+      "number": 36,
+      "branch": "test-assist/useThemeProvider-tests-20260512-430283acfb9527b5",
       "created": "2026-05-12"
     }
   ],
@@ -83,16 +83,28 @@
   },
   "backlog": [
     {
+      "file": "frontend/src/utils/errors.ts",
+      "coverage": "75% stmts on main (line 85 uncovered)",
+      "priority": "medium",
+      "note": "isRecoverableError(code) and isAppError(error) have real logic worth testing; straightforward to test"
+    },
+    {
       "file": "frontend/src/services/chatService.ts",
       "coverage": "65% stmts after PR #28",
       "priority": "medium",
       "note": "sendMcpApproval and active-stream cancelStream remain uncovered; significant mocking effort needed"
     },
     {
+      "file": "frontend/src/services/telemetry.ts",
+      "coverage": "22% stmts on main",
+      "priority": "low",
+      "note": "initTelemetry early-exit branch + trackFeedback conversationId?? branch; requires mocking @microsoft/applicationinsights-web"
+    },
+    {
       "file": "frontend/src/config/authConfig.ts",
       "coverage": "38% stmts",
       "priority": "low",
-      "note": "MSAL config branches; needs env stubbing"
+      "note": "loggerCallback switch branches + throw cases when env vars missing; MSAL config branches"
     },
     {
       "file": "frontend/src/hooks/useMediaQuery (effect path)",
@@ -112,7 +124,7 @@
     "StreamChunk.cs: all factory methods + computed properties (PR #30, backend 48→69 tests)",
     "useFormatTimestamp.ts: ~100% stmts all 7 branches (PR #32, 174→191 frontend tests)",
     "useAppState.ts: ~100% all computed selectors (PR #34, 174→192 frontend tests +18)",
-    "useThemeProvider.ts: 69.23% stmts / 59.09% branch / 64.28% funcs (PR TBD, 174→195 frontend tests +21)"
+    "useThemeProvider.ts: 69.23% stmts / 59.09% branch / 64.28% funcs (PR #36, 174→195 frontend tests +21)"
   ],
   "notes": [
     "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
@@ -143,6 +155,10 @@
     "useThemeProvider: mock useState→calls initializer (captures localStorage/matchMedia), useEffect→vi.fn() no-op, useMemo→fn(), useCallback→identity",
     "useThemeProvider: useEffect bodies (event listener setup + document.colorScheme) remain uncovered; require real React lifecycle",
     "useThemeProvider: setTheme localStorage.setItem is testable since jsdom provides localStorage; internal setSavedTheme setter is vi.fn()",
-    "useThemeProvider: invalid localStorage value falls back to 'System' via ['Light','Dark','System'].includes() check"
+    "useThemeProvider: invalid localStorage value falls back to 'System' via ['Light','Dark','System'].includes() check",
+    "errors.ts: isRecoverableError tests would check NETWORK/STREAM/SERVER→true and AUTH/UNKNOWN→false",
+    "errors.ts: isAppError tests would check null, non-object, missing fields, valid AppError structure",
+    "With 8 open Test Improver PRs unreviewed, hold off creating more PRs until maintainer reviews some",
+    "sseParser.ts: already has 23 well-written tests covering all major branches (94.44% stmts)"
   ]
 }
