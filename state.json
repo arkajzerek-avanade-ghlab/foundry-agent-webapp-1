@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-05-13T22:50:00Z",
-  "run_id": "25830723530",
-  "tasks_run_this_session": ["task2", "task4", "task7"],
+  "last_updated": "2026-05-14T22:37:12Z",
+  "run_id": "25889582973",
+  "tasks_run_this_session": ["task5", "task6", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
     "frontend_coverage": "cd frontend && npm run test:coverage",
@@ -81,6 +81,13 @@
     "title": "[Test Improver] Monthly Activity 2026-05",
     "month": "2026-05"
   },
+  "infra_issues_filed": [
+    {
+      "title": "[Test Improver] Add CI workflow to run tests automatically on pull requests",
+      "description": "No .github/workflows/ci.yml exists; proposed adding workflow to run frontend/backend tests on PRs",
+      "created": "2026-05-14"
+    }
+  ],
   "backlog": [
     {
       "file": "frontend/src/utils/errors.ts",
@@ -126,6 +133,12 @@
     "useAppState.ts: ~100% all computed selectors (PR #34, 174→192 frontend tests +18)",
     "useThemeProvider.ts: 69.23% stmts / 59.09% branch / 64.28% funcs (PR #36, 174→195 frontend tests +21)"
   ],
+  "infrastructure_gaps": [
+    "No CI workflow (.github/workflows/ci.yml) to auto-run tests on PRs; issue filed 2026-05-14",
+    "vitest config has no setupFiles; env var warnings for VITE_ENTRA_* printed but harmless",
+    "No @testing-library/react installed; limits hook testing to vi.mock(react) pattern",
+    "No coverage service (Codecov/Coveralls) integration; coverage only measured locally"
+  ],
   "notes": [
     "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
     "stripMarkdown: link regex [^\\]]+ requires >=1 char, empty-text links not replaced",
@@ -144,6 +157,7 @@
     "vi.useFakeTimers() must be paired with vi.useRealTimers() inside each test - vi.restoreAllMocks() does NOT restore timers",
     "chatService.sendMcpApproval and cancelStream-while-active remain uncovered (complex setup needed)",
     "safeoutputs create_pull_request does not return PR number in response - must query GitHub afterwards",
+    "safeoutputs create_issue does not return issue number in response - must query GitHub afterwards",
     "StreamChunk.HasAnnotations returns false for empty list (by design - Annotations.Count > 0 check)",
     "Backend test project: no shared fixtures needed - all tests are pure model tests, self-contained",
     "useFormatTimestamp: vi.mock react useCallback to identity is safe for testing pure inner functions",
@@ -158,7 +172,8 @@
     "useThemeProvider: invalid localStorage value falls back to 'System' via ['Light','Dark','System'].includes() check",
     "errors.ts: isRecoverableError tests would check NETWORK/STREAM/SERVER→true and AUTH/UNKNOWN→false",
     "errors.ts: isAppError tests would check null, non-object, missing fields, valid AppError structure",
-    "With 8 open Test Improver PRs unreviewed, hold off creating more PRs until maintainer reviews some",
-    "sseParser.ts: already has 23 well-written tests covering all major branches (94.44% stmts)"
+    "With 8 open Test Improver PRs unreviewed, hold off creating more test PRs until maintainer reviews some",
+    "sseParser.ts: already has 23 well-written tests covering all major branches (94.44% stmts)",
+    "No CI workflow exists in .github/workflows/ for running tests automatically on PRs"
   ]
 }
