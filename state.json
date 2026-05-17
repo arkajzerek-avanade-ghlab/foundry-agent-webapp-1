@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-05-16T22:11:00Z",
-  "run_id": "25974241578",
-  "tasks_run_this_session": ["task4", "task7"],
+  "last_updated": "2026-05-17T22:17:00Z",
+  "run_id": "26004224535",
+  "tasks_run_this_session": ["task1", "task7"],
   "commands": {
     "frontend_test": "cd frontend && npm run test:run",
     "frontend_coverage": "cd frontend && npm run test:coverage",
@@ -16,167 +16,48 @@
   },
   "test_counts": {
     "frontend_main_branch": 174,
-    "frontend_with_pr18": 268,
-    "frontend_with_pr24": 193,
-    "frontend_with_pr26": 178,
-    "frontend_with_pr28": 189,
-    "frontend_with_pr32": 191,
-    "frontend_with_useAppState_pr": 192,
-    "frontend_with_useThemeProvider_pr": 195,
-    "backend_main_branch": 48,
-    "backend_with_pr30": 69
+    "backend_main_branch": 48
   },
   "open_prs": [
-    {
-      "title": "[Test Improver] Add tests for errorHandler, exportConversation, and stripMarkdown utils",
-      "number": 18,
-      "branch": "test-assist/error-handler-export-utils-d65e14fa41955bff",
-      "created": "2026-05-05"
-    },
-    {
-      "title": "[Test Improver] Add tests for AGENTS actions, CHAT_CANCEL_EDIT, and appReducer edge cases",
-      "number": 24,
-      "branch": "test-assist/appReducer-agents-edit-cancel-006672b575f62a58",
-      "created": "2026-05-06"
-    },
-    {
-      "title": "[Test Improver] Add coverage for citationParser second-pass paths and createAttachmentMetadata",
-      "number": 26,
-      "branch": "test-assist/citation-fileattachment-coverage-afb61292e33babad",
-      "created": "2026-05-07"
-    },
-    {
-      "title": "[Test Improver] Add coverage for ChatService: file ops, SSE streaming, and dispatch helpers",
-      "number": 28,
-      "branch": "test-assist/chatservice-coverage-20260508-62f9fe8f81b7b427",
-      "created": "2026-05-08"
-    },
-    {
-      "title": "[Test Improver] Add tests for StreamChunk model factory methods and computed properties",
-      "number": 30,
-      "branch": "test-assist/streamchunk-model-tests-20260509-df4e8548270af0c0",
-      "created": "2026-05-09"
-    },
-    {
-      "title": "[Test Improver] Add tests for useFormatTimestamp hook time-formatting branches",
-      "number": 32,
-      "branch": "test-assist/useFormatTimestamp-tests-20260510-4f63becdbb3ed2d2",
-      "created": "2026-05-10"
-    },
-    {
-      "title": "[Test Improver] Add tests for useAppState, useChatState, and useUIState computed selectors",
-      "number": 34,
-      "branch": "test-assist/useAppState-tests-20260511-440ed63e69789dbe",
-      "created": "2026-05-11"
-    },
-    {
-      "title": "[Test Improver] Add tests for useThemeProvider hook: localStorage init, isDarkMode logic, setTheme persistence",
-      "number": 36,
-      "branch": "test-assist/useThemeProvider-tests-20260512-430283acfb9527b5",
-      "created": "2026-05-12"
-    }
+    {"number": 18, "branch": "test-assist/error-handler-export-utils-d65e14fa41955bff"},
+    {"number": 24, "branch": "test-assist/appReducer-agents-edit-cancel-006672b575f62a58"},
+    {"number": 26, "branch": "test-assist/citation-fileattachment-coverage-afb61292e33babad"},
+    {"number": 28, "branch": "test-assist/chatservice-coverage-20260508-62f9fe8f81b7b427"},
+    {"number": 30, "branch": "test-assist/streamchunk-model-tests-20260509-df4e8548270af0c0"},
+    {"number": 32, "branch": "test-assist/useFormatTimestamp-tests-20260510-4f63becdbb3ed2d2"},
+    {"number": 34, "branch": "test-assist/useAppState-tests-20260511-440ed63e69789dbe"},
+    {"number": 36, "branch": "test-assist/useThemeProvider-tests-20260512-430283acfb9527b5"}
   ],
-  "monthly_activity_issue": {
-    "number": 19,
-    "title": "[Test Improver] Monthly Activity 2026-05",
-    "month": "2026-05"
-  },
-  "infra_issues_filed": [
-    {
-      "number": 39,
-      "title": "[Test Improver] Add CI workflow to run tests automatically on pull requests",
-      "description": "No .github/workflows/ci.yml exists; proposed adding workflow to run frontend/backend tests on PRs",
-      "created": "2026-05-14"
-    }
-  ],
+  "monthly_activity_issue": {"number": 19, "month": "2026-05"},
+  "infra_issues_filed": [{"number": 39, "created": "2026-05-14"}],
   "backlog": [
-    {
-      "file": "frontend/src/utils/errors.ts",
-      "coverage": "75% stmts on main (line 85 uncovered)",
-      "priority": "medium",
-      "note": "isRecoverableError(code) and isAppError(error) have real logic worth testing; straightforward to test"
-    },
-    {
-      "file": "frontend/src/services/chatService.ts",
-      "coverage": "65% stmts after PR #28",
-      "priority": "medium",
-      "note": "sendMcpApproval and active-stream cancelStream remain uncovered; significant mocking effort needed"
-    },
-    {
-      "file": "frontend/src/services/telemetry.ts",
-      "coverage": "22% stmts on main",
-      "priority": "low",
-      "note": "initTelemetry early-exit branch + trackFeedback conversationId?? branch; requires mocking @microsoft/applicationinsights-web"
-    },
-    {
-      "file": "frontend/src/config/authConfig.ts",
-      "coverage": "38% stmts",
-      "priority": "low",
-      "note": "loggerCallback switch branches + throw cases when env vars missing; MSAL config branches"
-    },
-    {
-      "file": "frontend/src/hooks/useMediaQuery (effect path)",
-      "coverage": "effect body uncovered",
-      "priority": "low",
-      "note": "addEventListener/removeEventListener dispatch requires @testing-library/react (not installed)"
-    }
-  ],
-  "covered": [
-    "errorHandler.ts: 100% (PR #18)",
-    "stripMarkdown.ts: 100% (PR #18)",
-    "exportConversation.ts: ~100% (PR #18)",
-    "appReducer.ts: 99% stmts / 95% branch / 100% funcs (PR #24)",
-    "citationParser.ts: 100% stmts / 95% branch / 100% funcs (PR #26)",
-    "fileAttachments.ts: 95.08% stmts / 91.66% funcs (PR #26)",
-    "chatService.ts: 65% stmts / 49% branch / 75% funcs (PR #28)",
-    "StreamChunk.cs: all factory methods + computed properties (PR #30, backend 48->69 tests)",
-    "useFormatTimestamp.ts: ~100% stmts all 7 branches (PR #32, 174->191 frontend tests)",
-    "useAppState.ts: ~100% all computed selectors (PR #34, 174->192 frontend tests +18)",
-    "useThemeProvider.ts: 69.23% stmts / 59.09% branch / 64.28% funcs (PR #36, 174->195 frontend tests +21)"
+    {"file": "frontend/src/utils/errors.ts", "priority": "medium", "note": "isRecoverableError+isAppError: real logic, 75% stmts; next after PR backlog reviewed"},
+    {"file": "frontend/src/services/chatService.ts", "priority": "medium", "note": "sendMcpApproval+cancelStream-active remain; complex mocking"},
+    {"file": "frontend/src/services/telemetry.ts", "priority": "low", "note": "22% stmts; needs mocking ApplicationInsights SDK"},
+    {"file": "frontend/src/config/authConfig.ts", "priority": "low", "note": "38% stmts; loggerCallback+throw cases"},
+    {"file": "frontend/src/hooks/useMediaQuery effect", "priority": "low", "note": "requires @testing-library/react (not installed)"}
   ],
   "infrastructure_gaps": [
-    "No CI workflow (.github/workflows/ci.yml) to auto-run tests on PRs; issue #39 filed 2026-05-14",
-    "vitest config has no setupFiles; env var warnings for VITE_ENTRA_* printed but harmless",
-    "No @testing-library/react installed; limits hook testing to vi.mock(react) pattern",
-    "No coverage service (Codecov/Coveralls) integration; coverage only measured locally"
+    "No CI workflow; issue #39 filed 2026-05-14",
+    "No @testing-library/react installed; limits hook testing",
+    "No coverage service integration"
   ],
   "notes": [
-    "stripMarkdown: fenced code blocks leave blank line (surrounding newlines) - not a bug",
-    "stripMarkdown: link regex [^\\]]+ requires >=1 char, empty-text links not replaced",
-    "Frontend tests need VITE_ENTRA_SPA_CLIENT_ID and VITE_ENTRA_TENANT_ID but tests still run (only warn)",
-    "Coverage report writes fail in CI (ENOENT step_summary) but exit code 0 - harmless",
-    "Backend uses MSTest.Sdk not traditional xUnit; no [Fact] - uses [TestMethod]",
-    "git commit requires COMMIT_MESSAGE.md workflow per repo policy",
-    "jsdom provides localStorage automatically - can use localStorage.setItem/clear() in tests without mocking",
-    "appReducer default: branch (line 620) is TypeScript exhaustiveness check - cannot be covered by design",
-    "VoiceInput.tsx has pre-existing lint error (unused 'err') - not our problem",
-    "sseParser.ts line 82: unreachable due to trim() behavior - jsonString can never be empty when startsWith('data: ') is true",
-    "citationParser.ts line 101: startIndex positional-match branch very hard to cover (low priority)",
-    "fileAttachments.ts lines 174-175: FileReader reject path unreachable in jsdom (readAsDataURL always produces valid URI)",
-    "citationParser second pass: annotation without textToReplace is NOT added to annotationByPlaceholder map, so first pass skips it; second pass then matches by label",
-    "chatService SSE format: flat JSON {type:'chunk',content:'...'} NOT {event:'chunk',data:{content:'...'}}",
-    "vi.useFakeTimers() must be paired with vi.useRealTimers() inside each test - vi.restoreAllMocks() does NOT restore timers",
-    "chatService.sendMcpApproval and cancelStream-while-active remain uncovered (complex setup needed)",
-    "safeoutputs create_pull_request does not return PR number in response - must query GitHub afterwards",
-    "safeoutputs create_issue does not return issue number in response - must query GitHub afterwards",
-    "StreamChunk.HasAnnotations returns false for empty list (by design - Annotations.Count > 0 check)",
-    "Backend test project: no shared fixtures needed - all tests are pure model tests, self-contained",
-    "useFormatTimestamp: vi.mock react useCallback to identity is safe for testing pure inner functions",
-    "useFormatTimestamp: absolute date strings tested structurally (non-empty, no 'ago') to be locale-agnostic",
-    "@testing-library/react NOT installed - use vi.mock('react', useMemo:fn=>fn()) for hook tests",
-    "useAppState: vi.mock react useMemo->fn() pattern allows direct hook call without render context; useMemo is pure computation so this is safe",
-    "useAppState: mock useAppContext via vi.mock('../../contexts/AppContext') with module-level mockState variable mutated per test",
-    "useThemeProvider: window.matchMedia not available in jsdom - must mock before module import via Object.defineProperty",
-    "useThemeProvider: mock useState->calls initializer (captures localStorage/matchMedia), useEffect->vi.fn() no-op, useMemo->fn(), useCallback->identity",
-    "useThemeProvider: useEffect bodies (event listener setup + document.colorScheme) remain uncovered; require real React lifecycle",
-    "useThemeProvider: setTheme localStorage.setItem is testable since jsdom provides localStorage; internal setSavedTheme setter is vi.fn()",
-    "useThemeProvider: invalid localStorage value falls back to 'System' via ['Light','Dark','System'].includes() check",
-    "errors.ts: isRecoverableError tests would check NETWORK/STREAM/SERVER->true and AUTH/UNKNOWN->false",
-    "errors.ts: isAppError tests would check null, non-object, missing fields, valid AppError structure",
-    "With 8 open Test Improver PRs unreviewed, hold off creating more test PRs until maintainer reviews some",
-    "sseParser.ts: already has 23 well-written tests covering all major branches (94.44% stmts)",
-    "No CI workflow exists in .github/workflows/ for running tests automatically on PRs",
-    "2026-05-15: All 8 PR branches verified conflict-free with main; frontend 174 tests pass, backend 48 tests pass",
-    "2026-05-16: main still at eabd383; all 8 PRs remain conflict-free; no maintainer activity on PRs yet"
+    "Frontend tests warn VITE_ENTRA_* missing but succeed",
+    "Backend uses MSTest.Sdk; uses [TestMethod] not [Fact]",
+    "git commit requires COMMIT_MESSAGE.md workflow",
+    "jsdom provides localStorage; no mocking needed",
+    "appReducer default: branch unreachable by design",
+    "VoiceInput.tsx has pre-existing lint error (unused err)",
+    "sseParser.ts line 82 unreachable; chatService SSE flat JSON {type,content}",
+    "vi.useFakeTimers() must pair with vi.useRealTimers() per test",
+    "@testing-library/react NOT installed; use vi.mock('react',useMemo:fn=>fn()) for hooks",
+    "useThemeProvider: window.matchMedia not in jsdom; mock via Object.defineProperty before import",
+    "useThemeProvider: useEffect bodies need real React lifecycle; remain uncovered",
+    "safeoutputs create_pull_request/create_issue do not return number; query GitHub after",
+    "StreamChunk.HasAnnotations false for empty list (Count>0 check)",
+    "sseParser.ts: 94.44% stmts, 23 tests already; no action needed",
+    "8 open unreviewed PRs: hold new PRs until maintainer reviews",
+    "2026-05-17: main eabd383; 174 frontend / 48 backend tests pass; all 8 PRs open unreviewed"
   ]
 }
